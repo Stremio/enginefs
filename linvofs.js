@@ -72,6 +72,8 @@ function createServer()
         
         openPath(u.pathname, function(err, handle)
         {
+            if (err) { console.error(err); response.statusCode = 500; return response.end(); }
+            
             var range = request.headers.range;
             range = range && rangeParser(handle.length, range)[0];
             response.setHeader("Accept-Ranges", "bytes");
@@ -104,5 +106,3 @@ module.exports = {
     http: createServer,
     // fuse: TODO
 };
-
-createServer().listen(7777);
