@@ -3,6 +3,7 @@
 var http = require("http");
 var fs = require("fs");
 var url = require("url");
+var os = require("os");
 
 var rangeParser = require("range-parser");
 var mime = require("mime");
@@ -15,8 +16,15 @@ engine.engines = { };
 
 function createEngine(infoHash, cb)
 {
-    console.log("create engine for "+infoHash);
-    cb(null);
+    var torrent = "magnet:?xt=urn:btih:"+infoHash;
+    var e = engine.engines[infoHash] = engine.engines[infoHash] || engine(torrent, {
+        /* Options */
+        connections: os.cpus().length > 1 ? 100 : 30,
+        virtual: true
+    });
+    
+    if (e.torrent) return cb(null, e);
+    e.on("ready", function() { cb(null, e) });
 }
 
 function openPath(path, cb)
@@ -35,7 +43,7 @@ function openPath(path, cb)
             if (err) return cb(err);
         
             // TODO: check if file index is valid once engine ready
-
+            console.log(engine.files);
             console.log(infoHash);
             console.log(i);
         });
