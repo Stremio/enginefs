@@ -13,15 +13,43 @@ var pump = require("pump");
 var engine = require("torrent-stream");
 engine.engines = { };
 
+function createEngine(infoHash, cb)
+{
+    console.log("create engine for "+infoHash);
+    cb(null);
+}
+
 function openPath(path, cb)
 {
-    // length: 64 ; Linvo Hash ; TODO
     // length: 40 ; info hash
-    
-    var parts = path.split("/");
+    var parts = path.split("/").filter(function(x) { return x });
     if (parts[0] && parts[0].length == 40)
     {
-        console.log(path);
+        var infoHash = parts[0];
+		var i = Number(parts[1]);
+
+		if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index"));
+        
+        createEngine(infoHash, function(err, engine)
+        {
+            if (err) return cb(err);
+        
+            // TODO: check if file index is valid once engine ready
+
+            console.log(infoHash);
+            console.log(i);
+        });
+                
+        return;
+    }
+    
+    // length: 64 ; Linvo Hash ; TODO
+    if (parts[0] && parts[0].length == 64)
+    {
+        /*
+         * Large TODO
+         */
+        return cb(new Error("Not implemented yet"));
     }
     
     cb(new Error("Cannot parse path"));
@@ -53,8 +81,7 @@ function createServer()
 
 	server.on("request", function(request, response) {
 		var u = url.parse(request.url);
-        console.log("url");
-        console.log(u);
+
 		if (u.pathname === '/favicon.ico') return response.end();
 		if (u.pathname === '/') u.pathname = '/'+index;
         
