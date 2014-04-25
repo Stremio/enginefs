@@ -74,6 +74,9 @@ function createServer()
         {
             if (err) { console.error(err); response.statusCode = 500; return response.end(); }
             
+            //request.connection.setTimeout(60*60*1000);
+            request.connection.setTimeout(0);
+
             var range = request.headers.range;
             range = range && rangeParser(handle.length, range)[0];
             response.setHeader("Accept-Ranges", "bytes");
@@ -101,6 +104,16 @@ function createServer()
 /* Front-end: FUSE
  */
 // TODO
+
+/*
+* TODO: emit events
+* fileCached fileID
+* fileProgress percent fileID
+* or maybe have that in torrent-stream first?
+* 
+* this would read files from .torrent, create an array of required pieces for each file,
+* subscribe to the piece downloaded event, and take out those pieces frm the arrays.
+*/
 
 module.exports = {
     http: createServer,
