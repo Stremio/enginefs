@@ -74,8 +74,8 @@ function createServer()
         {
             if (err) { console.error(err); response.statusCode = 500; return response.end(); }
             
-            //request.connection.setTimeout(60*60*1000);
-            request.connection.setTimeout(0);
+            request.connection.setTimeout(24*60*60*1000);
+            //request.connection.setTimeout(0);
 
             var range = request.headers.range;
             range = range && rangeParser(handle.length, range)[0];
