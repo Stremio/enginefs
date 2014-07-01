@@ -15,6 +15,8 @@ var byline = require("byline");
 
 var _  = require("underscore");
 
+var LinvoFS = new events.EventEmitter();
+
 /* Backend
  */
 var engine = require("torrent-stream");
@@ -34,14 +36,14 @@ function createEngine(infoHash, options, cb)
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
     var e = engine.engines[infoHash] = engine.engines[infoHash] || engine(torrent, options);
 
-    stats[infoHash] = stats[infoHash] || {}; // TODO: event-based approach for this
-
     if (options.peers) options.peers.forEach(function(p) { e.connect(p) });
     if (options.peerStream) byline(request(options.peerStream)).on("data", function(d) { e.connect(d.toString()) });
 
     if (e.torrent) cb(null, e);
     else e.on("ready", function() { cb(null, e) });
     
+    LinvoFS.emit("torrentEngine", infoHash, e);
+ 
     return e;
 }
 
@@ -128,6 +130,7 @@ function createServer()
 * Update torrent-stream stats periodically
 * TODO: do that in torrent-stream thread
 */
+LinvoFS.on("torrentEngine", function(hash) { stats[infoHash] = stats[infoHash] || {} });
 setInterval(function() {
     for (hash in engine.engines)
     {
@@ -163,7 +166,7 @@ setInterval(function() {
 * subscribe to the piece downloaded event, and take out those pieces frm the arrays.
 */
 
-module.exports = new events.EventEmitter();
+module.exports = LinvoFS;
 module.exports.http = createServer;
 // FUSE: TODO
 
