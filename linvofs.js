@@ -10,6 +10,9 @@ var rangeParser = require("range-parser");
 var mime = require("mime");
 var pump = require("pump");
 
+var request = require("request");
+var byline = require("byline");
+
 /* Backend
  */
 var engine = require("torrent-stream");
@@ -27,7 +30,10 @@ function createEngine(infoHash, options, cb)
 
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
     var e = engine.engines[infoHash] = engine.engines[infoHash] || engine(torrent, options);
-    
+
+    if (options.peers) options.peers.forEach(function(p) { e.connect(p) });
+    if (options.peerStream) byline(request(options.peerStream)).on("data", function(d) { e.connect(d.toString()) });
+
     if (e.torrent) cb(null, e);
     else e.on("ready", function() { cb(null, e) });
     
