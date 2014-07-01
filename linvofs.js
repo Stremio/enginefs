@@ -14,14 +14,18 @@ var pump = require("pump");
 var engine = require("torrent-stream");
 engine.engines = { };
 
-function createEngine(infoHash, cb)
+var defaultOptions = {
+    /* Options */
+    connections: os.cpus().length > 1 ? 100 : 30,
+    virtual: true
+};
+
+function createEngine(infoHash, options, cb)
 {
-    var torrent = "magnet:?xt=urn:btih:"+infoHash;
-    var e = engine.engines[infoHash] = engine.engines[infoHash] || engine(torrent, {
-        /* Options */
-        connections: os.cpus().length > 1 ? 100 : 30,
-        virtual: true
-    });
+    var cb = cb || function() { };
+
+    var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
+    var e = engine.engines[infoHash] = engine.engines[infoHash] || engine(torrent, options);
     
     if (e.torrent) return cb(null, e);
     e.on("ready", function() { cb(null, e) });
@@ -38,7 +42,7 @@ function openPath(path, cb)
 
 		if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index"));
         
-        createEngine(infoHash, function(err, engine)
+        createEngine(infoHash, defaultOptions, function(err, engine)
         {
             if (err) return cb(err);
             if (! engine.files[i]) return cb(new Error("Torrent does not contain file with index "+i));
@@ -117,5 +121,6 @@ function createServer()
 
 module.exports = {
     http: createServer,
-    // fuse: TODO
+    // fuse: TODO,
+    createTorrentEngine: createEngine
 };
