@@ -156,15 +156,44 @@ setInterval(function() {
     };
 }, 50);
 
-/*
-* TODO: emit events
-* fileCached fileID
-* fileProgress percent fileID
-* or maybe have that in torrent-stream first?
-* 
-* this would read files from .torrent, create an array of required pieces for each file,
-* subscribe to the piece downloaded event, and take out those pieces frm the arrays.
-*/
+
+LinvoFS.on("torrentEngineReady", function(infoHash, e)
+{
+    /*
+    * TODO: emit events
+    * cached:fileID
+    * cachedProgress:fileID percent 
+    * 
+    * 
+    * this would read files from .torrent, create an array of required pieces for each file,
+    * subscribe to the piece downloaded event, and take out those pieces frm the arrays.
+    */
+
+    /*
+    var file = e.torrent.files[resp.torrentIndex];
+    var startPiece = (file.offset / e.torrent.pieceLength) | 0;
+    var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
+    var fpieces = [ ];
+    for (var i=startPiece; i<=endPiece; i++) fpieces.push(i);
+    
+    e.on("download", function(p) { 
+        // remove from array
+        var idx = fpieces.indexOf(p);
+        if (idx == -1) return;
+        fpieces.splice(idx, 1);
+
+        if (fpieces.length) return;
+
+        var fpath = e.store.getDest(resp.torrentIndex);
+        mediaFile.update(inf, _.extend({ 
+            path: fpath, len: fs.statSync(fpath).size,
+            torrentHash: resp.infoHash, torrentIndex: resp.torrentIndex
+        }, inf), { upsert: true });
+    });
+    */
+});
+
+
 
 module.exports = LinvoFS;
 module.exports.http = createServer;
