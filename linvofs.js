@@ -29,6 +29,7 @@ function createEngine(infoHash, options, cb)
     
     if (e.torrent) return cb(null, e);
     e.on("ready", function() { cb(null, e) });
+    return e;
 }
 
 function openPath(path, cb)
