@@ -27,8 +27,9 @@ function createEngine(infoHash, options, cb)
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
     var e = engine.engines[infoHash] = engine.engines[infoHash] || engine(torrent, options);
     
-    if (e.torrent) return cb(null, e);
-    e.on("ready", function() { cb(null, e) });
+    if (e.torrent) cb(null, e);
+    else e.on("ready", function() { cb(null, e) });
+    
     return e;
 }
 

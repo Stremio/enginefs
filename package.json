@@ -1,7 +1,7 @@
 {
   "name": "linvofs",
   "preferGlobal": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Ivo Georgiev <ivo@linvo.com>",
   "description": "LinvoFS - accessing files via P2P",
   "main": "./linvofs",
