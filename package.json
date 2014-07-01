@@ -14,7 +14,8 @@
     "pump": "^0.3.1",
     "range-parser": "^1.0.0",
     "byline": "3.1.2",
-    "request": "2.16.x"
+    "request": "2.16.x",
+    "underscore": "1.6.0"
   },
   "devDependencies": {
     "torrent-stream": "This would be a dev dependancy since we will rely on the module that uses this to include torrent-stream",

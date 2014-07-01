@@ -13,10 +13,13 @@ var pump = require("pump");
 var request = require("request");
 var byline = require("byline");
 
+var _  = require("underscore");
+
 /* Backend
  */
 var engine = require("torrent-stream");
 engine.engines = { };
+var stats = {};
 
 var defaultOptions = {
     /* Options */
@@ -30,6 +33,8 @@ function createEngine(infoHash, options, cb)
 
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
     var e = engine.engines[infoHash] = engine.engines[infoHash] || engine(torrent, options);
+
+    stats[infoHash] = stats[infoHash] || {}; // TODO: event-based approach for this
 
     if (options.peers) options.peers.forEach(function(p) { e.connect(p) });
     if (options.peerStream) byline(request(options.peerStream)).on("data", function(d) { e.connect(d.toString()) });
@@ -118,6 +123,36 @@ function createServer()
  */
 // TODO
 
+
+/*
+* Update torrent-stream stats periodically
+*/
+setInterval(function() {
+    for (hash in engine.engines)
+    {
+        var e = engine.engines[hash];
+        _.extend(stats[hash], {
+            peers: e.swarm.wires.length,
+            unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
+            queued: e.swarm.queued.length,
+            unique: Object.keys(e.swarm._peers).length,
+
+            files: e.torrent && e.torrent.files,
+
+            downloaded: e.swarm.downloaded,
+            uploaded: e.swarm.uploaded,
+
+            downloadSpeed: e.swarm.downloadSpeed(),
+            uploadSpeed: e.swarm.downloadSpeed(),
+
+            dht: !!e.dht,
+            dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
+            dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
+
+        });
+    };
+}, 100);
+
 /*
 * TODO: emit events
 * fileCached fileID
@@ -133,4 +168,5 @@ module.exports.http = createServer;
 // FUSE: TODO
 
 module.exports.createTorrentEngine = createEngine;
+module.exports.stats = stats;
 
