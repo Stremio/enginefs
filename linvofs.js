@@ -4,6 +4,7 @@ var http = require("http");
 var fs = require("fs");
 var url = require("url");
 var os = require("os");
+var events = require("events");
 
 var rangeParser = require("range-parser");
 var mime = require("mime");
@@ -121,8 +122,9 @@ function createServer()
 * subscribe to the piece downloaded event, and take out those pieces frm the arrays.
 */
 
-module.exports = {
-    http: createServer,
-    // fuse: TODO,
-    createTorrentEngine: createEngine
-};
+module.exports = new events.EventEmitter();
+module.exports.http = createServer;
+// FUSE: TODO
+
+module.exports.createTorrentEngine = createEngine;
+
