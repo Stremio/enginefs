@@ -161,8 +161,8 @@ LinvoFS.on("torrentEngineReady", function(infoHash, e)
 {
     /*
     * TODO: emit events
-    * cached:fileID
-    * cachedProgress:fileID percent 
+    * cached:fileID filePath
+    * cachedProgress:fileID filePath percent 
     * 
     * 
     * this would read files from .torrent, create an array of required pieces for each file,
@@ -185,10 +185,7 @@ LinvoFS.on("torrentEngineReady", function(infoHash, e)
         if (fpieces.length) return;
 
         var fpath = e.store.getDest(resp.torrentIndex);
-        mediaFile.update(inf, _.extend({ 
-            path: fpath, len: fs.statSync(fpath).size,
-            torrentHash: resp.infoHash, torrentIndex: resp.torrentIndex
-        }, inf), { upsert: true });
+
     });
     */
 });
