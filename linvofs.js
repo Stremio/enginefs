@@ -126,6 +126,7 @@ function createServer()
 
 /*
 * Update torrent-stream stats periodically
+* TODO: do that in torrent-stream thread
 */
 setInterval(function() {
     for (hash in engine.engines)
@@ -134,7 +135,7 @@ setInterval(function() {
         _.extend(stats[hash], {
             peers: e.swarm.wires.length,
             unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
-            queued: e.swarm.queued.length,
+            queued: e.swarm.queued,
             unique: Object.keys(e.swarm._peers).length,
 
             files: e.torrent && e.torrent.files,
@@ -148,10 +149,9 @@ setInterval(function() {
             dht: !!e.dht,
             dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
             dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
-
         });
     };
-}, 100);
+}, 50);
 
 /*
 * TODO: emit events
