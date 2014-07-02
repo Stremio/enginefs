@@ -81,7 +81,7 @@ function openPath(path, cb)
 
 /* Front-end: HTTP
  */
-function createServer()
+function createServer(port)
 {
 	var server = http.createServer();
 
@@ -117,7 +117,8 @@ function createServer()
             pump(handle.createReadStream(range), response);           
         });
     });
-
+	
+	if (port) server.listen(port);
 	return server;    
 }
  
@@ -130,7 +131,7 @@ function createServer()
 * Update torrent-stream stats periodically
 * TODO: do that in torrent-stream thread
 */
-LinvoFS.on("torrentEngine", function(hash) { stats[infoHash] = stats[infoHash] || {} });
+LinvoFS.on("torrentEngine", function(hash) { stats[hash] = stats[hash] || {} });
 setInterval(function() {
     for (hash in engine.engines)
     {
@@ -198,4 +199,13 @@ module.exports.http = createServer;
 
 module.exports.createTorrentEngine = createEngine;
 module.exports.stats = stats;
+
+if (process.send) 
+{
+	var dnode = require("dnode");
+	var server = dnode(LinvoFS, { /*emit: "object", */ weak:false }); // Don't emit as objects; Node IPC uses JSON serialization either way, and still loses special objects - e.g. Date and Buffer
+
+	server.on("data", function(d) { if (process.send) process.send(d) });
+	process.on("message", function(msg) { server.write(msg) });
+}
 
