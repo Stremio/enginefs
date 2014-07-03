@@ -33,6 +33,8 @@ function createEngine(infoHash, options, cb)
 {
     var cb = cb || function() { };
 
+    if (options.torrent && Array.isArray(options.torrent)) options.torrent = new Buffer(options.torrent);
+
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
     var e = engine.engines[infoHash] = engine.engines[infoHash] || engine(torrent, options);
 
