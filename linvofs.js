@@ -140,6 +140,8 @@ function createServer(port)
 * TODO: do that in torrent-stream thread
 */
 var active = {};
+LinvoFS.on("opened", function(hash) { active[hash] = true });
+LinvoFS.on("closed", function(hash) { delete active[hash] });
 setInterval(function() {
     for (hash in engine.engines)
     {
