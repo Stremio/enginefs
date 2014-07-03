@@ -67,7 +67,7 @@ function openPath(path, cb)
             if (err) return cb(err);
             if (! engine.files[i]) return cb(new Error("Torrent does not contain file with index "+i));
             
-            cb(null, engine.files[i]);
+            cb(null, engine.files[i], engine);
         });
         return;
     }
@@ -94,10 +94,14 @@ function createServer(port)
 
 		if (u.pathname === "/favicon.ico") return response.end();
         
-        openPath(u.pathname, function(err, handle)
+        openPath(u.pathname, function(err, handle, e)
         {
             if (err) { console.error(err); response.statusCode = 500; return response.end(); }
             
+            // Handle LinvoFS events
+            LinvoFS.emit("opened", e.infoHash, e.files.indexOf(handle));
+            response.on("finish", function() { LinvoFS.emit("closed", e.infoHash, e.files.indexOf(handle)) });
+
             request.connection.setTimeout(24*60*60*1000);
             //request.connection.setTimeout(0);
 
@@ -118,7 +122,7 @@ function createServer(port)
             response.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
 
             if (request.method === "HEAD") return response.end();
-            pump(handle.createReadStream(range), response);           
+            pump(handle.createReadStream(range), response);  
         });
     });
 	
@@ -135,12 +139,14 @@ function createServer(port)
 * Update torrent-stream stats periodically
 * TODO: do that in torrent-stream thread
 */
-LinvoFS.on("torrentEngine", function(hash) { stats[hash] = stats[hash] || {} });
+var active = {};
 setInterval(function() {
     for (hash in engine.engines)
     {
+        if (! active[hash]) return;
+
         var e = engine.engines[hash];
-        _.extend(stats[hash], {
+        LinvoFS.emit("stats:"+hash, {
             peers: e.swarm.wires.length,
             unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
             queued: e.swarm.queued,
