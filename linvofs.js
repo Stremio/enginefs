@@ -15,7 +15,9 @@ var byline = require("byline");
 
 var _  = require("underscore");
 
-var LinvoFS = new events.EventEmitter();
+var LinvoFS = { };
+_.extend(LinvoFS, new events.EventEmitter());
+
 
 /* Backend
  */

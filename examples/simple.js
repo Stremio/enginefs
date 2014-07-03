@@ -9,4 +9,5 @@ linvofsProc.on("message",function(msg) { d.write(msg) });
 d.on("remote", function(linvofs)
 {
 	linvofs.http(11471);
+	//linvofs.on()
 });
