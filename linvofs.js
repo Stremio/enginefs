@@ -137,7 +137,6 @@ function createServer(port)
 
 /*
 * Update torrent-stream stats periodically
-* TODO: do that in torrent-stream thread
 */
 var active = {};
 LinvoFS.on("opened", function(hash) { active[hash] = true });
@@ -170,14 +169,13 @@ setInterval(function() {
 }, 50);
 
 
+/*
+* Emit events
+* cached:fileID filePath
+* cachedProgress:fileID filePath percent 
+*/
 LinvoFS.on("opened", function(infoHash, fileIndex, e)
 {
-    /*
-    * Emit events
-    * cached:fileID filePath
-    * cachedProgress:fileID filePath percent 
-    */
-
     var file = e.torrent.files[fileIndex];
     if (file.__cacheEvents) return;
     file.__cacheEvents = true;
@@ -212,6 +210,15 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
     onDownload(); // initial call in case file is already done
 });
 
+
+/*
+* Prioritize downloads for opened files
+*/
+LinvoFS.on("opened", function(infoHash, fileIndex, e)
+{
+    // Part I: pause inactive torrent engines (no files requested from them)
+    for (hash in engine.engines) if (! active[hash]) engine.engines[hash].swarm.pause();
+});
 
 
 module.exports = LinvoFS;
