@@ -99,8 +99,8 @@ function createServer(port)
             if (err) { console.error(err); response.statusCode = 500; return response.end(); }
             
             // Handle LinvoFS events
-            LinvoFS.emit("opened", e.infoHash, e.files.indexOf(handle));
-            response.on("finish", function() { LinvoFS.emit("closed", e.infoHash, e.files.indexOf(handle)) });
+            LinvoFS.emit("opened", e.infoHash, e.files.indexOf(handle), e);
+            response.on("finish", function() { LinvoFS.emit("closed", e.infoHash, e.files.indexOf(handle), e) });
 
             request.connection.setTimeout(24*60*60*1000);
             //request.connection.setTimeout(0);
@@ -170,37 +170,36 @@ setInterval(function() {
 }, 50);
 
 
-LinvoFS.on("torrentEngineReady", function(infoHash, e)
+LinvoFS.on("opened", function(infoHash, fileIndex, e)
 {
     /*
-    * TODO: emit events
+    * Emit events
     * cached:fileID filePath
     * cachedProgress:fileID filePath percent 
-    * 
-    * 
-    * this would read files from .torrent, create an array of required pieces for each file,
-    * subscribe to the piece downloaded event, and take out those pieces frm the arrays.
     */
 
-    /*
-    var file = e.torrent.files[resp.torrentIndex];
+    var file = e.torrent.files[fileIndex];
     var startPiece = (file.offset / e.torrent.pieceLength) | 0;
     var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
     var fpieces = [ ];
     for (var i=startPiece; i<=endPiece; i++) fpieces.push(i);
     
-    e.on("download", function(p) { 
+    var onDownload = function(p) { 
         // remove from array
         var idx = fpieces.indexOf(p);
         if (idx == -1) return;
         fpieces.splice(idx, 1);
 
+        LinvoFS.emit("cachedProgress:"+infoHash+":"+fileIndex, (file.pieces.length-fpieces.length)/file.pieces.length, fpath);
+
         if (fpieces.length) return;
 
         var fpath = e.store.getDest(resp.torrentIndex);
+        LinvoFS.emit("cached:"+infoHash+":"+fileIndex, fpath);
 
-    });
-    */
+        e.removeListener("download", onDownload);
+    };
+    e.on("download", onDownload);
 });
 
 
