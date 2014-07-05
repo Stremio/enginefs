@@ -102,7 +102,9 @@ function createServer(port)
             
             // Handle LinvoFS events
             LinvoFS.emit("opened", e.infoHash, e.files.indexOf(handle), e);
-            response.on("finish", function() { LinvoFS.emit("closed", e.infoHash, e.files.indexOf(handle), e) });
+            var emitClose = function() { LinvoFS.emit("closed", e.infoHash, e.files.indexOf(handle), e) };
+            response.on("finish", emitClose);
+            response.on("close", emitClose);
 
             request.connection.setTimeout(24*60*60*1000);
             //request.connection.setTimeout(0);
@@ -217,12 +219,23 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 
 /*
 * Prioritize downloads for opened files
+* Stop unrequested downloads on every new request, something like garbage collecting
 */
+LinvoFS.on("closed", function(hash, fileIndex, e) { e.files[fileIndex].__linvofs_active = false });
+
 LinvoFS.on("opened", function(infoHash, fileIndex, e)
 {
-    // Part I: pause inactive torrent engines (no files requested from them)
-    for (hash in engines) if (! active[hash]) engines[hash].swarm.pause();
+    e.files[fileIndex].__linvofs_active = true;
+    for (hash in engines) {
+        engines[hash].files.forEach(function(f) { if (!f.__linvofs_active) f.deselect() });
+        /* TODO: stop engines without any active files (clean-up) */
+    }
 });
+
+
+/*
+* Clean-up: maybe remove idle engines?
+*/
 
 
 module.exports = LinvoFS;

@@ -8,6 +8,8 @@ linvofsProc.on("message",function(msg) { d.write(msg) });
 
 d.on("remote", function(linvofs)
 {
+	console.log("Listening on 11471");
 	linvofs.http(11471);
-	//linvofs.on()
+	//linvofs.on("opened",function(hash,idx){ console.log("opened "+hash+":"+idx) });
+	//linvofs.on("closed",function(hash,idx){ console.log("closed "+hash+":"+idx) })
 });
