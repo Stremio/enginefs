@@ -22,7 +22,8 @@ _.extend(LinvoFS, new events.EventEmitter());
 /* Backend
  */
 var engine = require("torrent-stream");
-engine.engines = { };
+
+var engines = engine.engines = {};
 var stats = {};
 
 var defaultOptions = {
@@ -38,7 +39,7 @@ function createEngine(infoHash, options, cb)
     if (options.torrent && Array.isArray(options.torrent)) options.torrent = new Buffer(options.torrent);
 
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
-    var e = engine.engines[infoHash] = engine.engines[infoHash] || engine(torrent, options);
+    var e = engines[infoHash] = engines[infoHash] || engine(torrent, options);
 
     if (options.peers) options.peers.forEach(function(p) { e.connect(p) });
     if (options.peerStream) byline(request(options.peerStream)).on("data", function(d) { e.connect(d.toString()) });
@@ -142,11 +143,11 @@ var active = {};
 LinvoFS.on("opened", function(hash) { active[hash] = true });
 LinvoFS.on("closed", function(hash) { delete active[hash] });
 setInterval(function() {
-    for (hash in engine.engines)
+    for (hash in engines)
     {
         if (! active[hash]) return;
 
-        var e = engine.engines[hash];
+        var e = engines[hash];
         LinvoFS.emit("stats:"+hash, {
             peers: e.swarm.wires.length,
             unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
@@ -217,7 +218,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 LinvoFS.on("opened", function(infoHash, fileIndex, e)
 {
     // Part I: pause inactive torrent engines (no files requested from them)
-    for (hash in engine.engines) if (! active[hash]) engine.engines[hash].swarm.pause();
+    for (hash in engines) if (! active[hash]) engines[hash].swarm.pause();
 });
 
 
