@@ -94,6 +94,7 @@ function createServer(port)
 		var u = url.parse(request.url);
 
 		if (u.pathname === "/favicon.ico") return response.end();
+        if (u.pathname == "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
         
         openPath(u.pathname, function(err, handle, e)
         {
@@ -145,29 +146,31 @@ LinvoFS.on("closed", function(hash) { delete active[hash] });
 setInterval(function() {
     for (hash in engines)
     {
-        if (! active[hash]) return;
-
-        var e = engines[hash];
-        LinvoFS.emit("stats:"+hash, {
-            peers: e.swarm.wires.length,
-            unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
-            queued: e.swarm.queued,
-            unique: Object.keys(e.swarm._peers).length,
-
-            files: e.torrent && e.torrent.files,
-
-            downloaded: e.swarm.downloaded,
-            uploaded: e.swarm.uploaded,
-
-            downloadSpeed: e.swarm.downloadSpeed(),
-            uploadSpeed: e.swarm.downloadSpeed(),
-
-            dht: !!e.dht,
-            dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
-            dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
-        });
+        if (active[hash]) 
+            LinvoFS.emit("stats:"+hash, getStatistics(engines[hash]));
     };
 }, 50);
+function getStatistics(e)
+{
+    return {
+        peers: e.swarm.wires.length,
+        unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
+        queued: e.swarm.queued,
+        unique: Object.keys(e.swarm._peers).length,
+
+        files: e.torrent && e.torrent.files,
+
+        downloaded: e.swarm.downloaded,
+        uploaded: e.swarm.uploaded,
+
+        downloadSpeed: e.swarm.downloadSpeed(),
+        uploadSpeed: e.swarm.downloadSpeed(),
+
+        dht: !!e.dht,
+        dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
+        dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
+    };
+}
 
 
 /*
