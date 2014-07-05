@@ -38,7 +38,7 @@ function createEngine(infoHash, options, cb)
 
     if (options.torrent && Array.isArray(options.torrent)) options.torrent = new Buffer(options.torrent);
     if (options.torrent && typeof(options.torrent)=="string") options.torrent = new Buffer(options.torrent, "base64");
-    
+
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
     var e = engines[infoHash] = engines[infoHash] || engine(torrent, options);
 
@@ -95,7 +95,7 @@ function createServer(port)
 		var u = url.parse(request.url);
 
 		if (u.pathname === "/favicon.ico") return response.end();
-        if (u.pathname == "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
+        if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
         
         openPath(u.pathname, function(err, handle, e)
         {
@@ -228,8 +228,9 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 {
     e.files[fileIndex].__linvofs_active = true;
     for (hash in engines) {
-        engines[hash].files.forEach(function(f) { if (!f.__linvofs_active) f.deselect() });
-        /* TODO: stop engines without any active files (clean-up) */
+        var files = engines[hash].files;
+        files.forEach(function(f) { if (!f.__linvofs_active) f.deselect() }); // Deselect files
+        if (files.every(function(f) { return !f.__linvofs_active })) engines[hash].swarm.pause(); // Stop swarms
     }
 });
 
