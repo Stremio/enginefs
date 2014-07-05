@@ -190,9 +190,11 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
     
     var onDownload = function(p) { 
         // remove from array
-        var idx = fpieces.indexOf(p);
-        if (idx == -1) return;
-        fpieces.splice(idx, 1);
+        if (p !== undefined) {
+            var idx = fpieces.indexOf(p);
+            if (idx == -1) return;
+            fpieces.splice(idx, 1);
+        }
 
         LinvoFS.emit("cachedProgress:"+infoHash+":"+fileIndex, (filePieces-fpieces.length)/filePieces, fpath);
 
@@ -202,8 +204,12 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
         LinvoFS.emit("cached:"+infoHash+":"+fileIndex, fpath);
 
         e.removeListener("download", onDownload);
+        e.removeListener("verify", onDownload);
     };
     e.on("download", onDownload);
+    e.on("verify", onDownload);
+
+    onDownload(); // initial call in case file is already done
 });
 
 
