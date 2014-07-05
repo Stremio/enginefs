@@ -183,6 +183,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
     var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
     var fpieces = [ ];
     for (var i=startPiece; i<=endPiece; i++) fpieces.push(i);
+    var filePieces = fpieces.length;
     
     var onDownload = function(p) { 
         // remove from array
@@ -190,7 +191,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
         if (idx == -1) return;
         fpieces.splice(idx, 1);
 
-        LinvoFS.emit("cachedProgress:"+infoHash+":"+fileIndex, (file.pieces.length-fpieces.length)/file.pieces.length, fpath);
+        LinvoFS.emit("cachedProgress:"+infoHash+":"+fileIndex, (filePieces-fpieces.length)/filePieces, fpath);
 
         if (fpieces.length) return;
 
