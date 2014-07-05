@@ -200,7 +200,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 
         if (fpieces.length) return;
 
-        var fpath = e.store.getDest(resp.torrentIndex);
+        var fpath = e.store.getDest(fileIndex);
         LinvoFS.emit("cached:"+infoHash+":"+fileIndex, fpath);
 
         e.removeListener("download", onDownload);
