@@ -179,11 +179,14 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
     */
 
     var file = e.torrent.files[fileIndex];
+    if (file.__cacheEvents) return;
+    file.__cacheEvents = true;
+
     var startPiece = (file.offset / e.torrent.pieceLength) | 0;
     var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
     var fpieces = [ ];
-    for (var i=startPiece; i<=endPiece; i++) fpieces.push(i);
-    var filePieces = fpieces.length;
+    for (var i=startPiece; i<=endPiece; i++) if (! e.bitfield.get(i)) fpieces.push(i);
+    var filePieces = Math.ceil(file.length / e.torrent.pieceLength);
     
     var onDownload = function(p) { 
         // remove from array
