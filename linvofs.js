@@ -223,10 +223,16 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 * Stop unrequested downloads on every new request, something like garbage collecting
 * TODO: cfg parameters: CLOSE_AFTER = milliseconds, PAUSE_SWARMS - bool, STOP_BG_DOWNLOADS - onopen/onclose
 */
+var policy = {
+    CLOSE_INACTIVE_AFTER: 5*60*1000,
+    STOP_SWARMS: true,
+    STOP_BKG_DOWNLOAD: true
+};
+
 LinvoFS.on("closed", function(hash, fileIndex, e)
 { 
     e.files[fileIndex].__linvofs_active = false;
-    if (files.every(function(f) { return !f.__linvofs_active })) e.__linvofs_last_active = new Date();
+    if (!isActive(e)) e.__linvofs_last_active = new Date();
 });
 
 LinvoFS.on("opened", function(infoHash, fileIndex, e)
@@ -234,10 +240,15 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
     e.files[fileIndex].__linvofs_active = true;
     for (hash in engines) {
         var files = engines[hash].files;
-        files.forEach(function(f) { if (!f.__linvofs_active) f.deselect() }); // Deselect files
-        if (files.every(function(f) { return !f.__linvofs_active })) engines[hash].swarm.pause(); // Stop swarms
+        
+        if (policy.STOP_BKG_DOWNLOAD) files.forEach(function(f) { if (!f.__linvofs_active) f.deselect() }); // Deselect files
+        if (policy.STOP_SWARMS && !isActive(engines[hash])) engines[hash].swarm.pause(); // Stop swarms
     }
 });
+
+function isActive(engine) { 
+    return engine.files.some(function(f) { return f.__linvofs_active })
+}
 
 
 /*
