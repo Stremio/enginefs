@@ -22,9 +22,7 @@ _.extend(LinvoFS, new events.EventEmitter());
 /* Backend
  */
 var engine = require("torrent-stream");
-
 var engines = engine.engines = {};
-var stats = {};
 
 var defaultOptions = {
     /* Options */
@@ -240,7 +238,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
     e.files[fileIndex].__linvofs_active = true;
     for (hash in engines) {
         var files = engines[hash].files;
-        
+
         if (policy.STOP_BKG_DOWNLOAD) files.forEach(function(f) { if (!f.__linvofs_active) f.deselect() }); // Deselect files
         if (policy.STOP_SWARMS && !isActive(engines[hash])) engines[hash].swarm.pause(); // Stop swarms
     }
@@ -261,7 +259,6 @@ module.exports.http = createServer;
 // FUSE: TODO
 
 module.exports.createTorrentEngine = createEngine;
-module.exports.stats = stats;
 
 if (process.send) 
 {
