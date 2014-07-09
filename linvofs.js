@@ -221,8 +221,13 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 /*
 * Prioritize downloads for opened files
 * Stop unrequested downloads on every new request, something like garbage collecting
+* TODO: cfg parameters: CLOSE_AFTER = milliseconds, PAUSE_SWARMS - bool, STOP_BG_DOWNLOADS - onopen/onclose
 */
-LinvoFS.on("closed", function(hash, fileIndex, e) { e.files[fileIndex].__linvofs_active = false });
+LinvoFS.on("closed", function(hash, fileIndex, e)
+{ 
+    e.files[fileIndex].__linvofs_active = false;
+    if (files.every(function(f) { return !f.__linvofs_active })) e.__linvofs_last_active = new Date();
+});
 
 LinvoFS.on("opened", function(infoHash, fileIndex, e)
 {
