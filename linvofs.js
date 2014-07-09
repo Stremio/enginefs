@@ -222,7 +222,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 * TODO: cfg parameters: CLOSE_AFTER = milliseconds, PAUSE_SWARMS - bool, STOP_BG_DOWNLOADS - onopen/onclose
 */
 var policy = LinvoFS.policy = {
-    CLOSE_INACTIVE_AFTER: 5*60*1000,
+    CLOSE_INACTIVE_AFTER: 1*60*1000,
     STOP_SWARMS: true,
     STOP_BKG_DOWNLOAD: true
 };
@@ -235,6 +235,7 @@ LinvoFS.on("closed", function(hash, fileIndex, e)
 
 LinvoFS.on("opened", function(infoHash, fileIndex, e)
 {
+    delete e.__linvofs_last_active;
     e.files[fileIndex].__linvofs_active = true;
     for (hash in engines) {
         var files = engines[hash].files;
@@ -243,6 +244,21 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
         if (policy.STOP_SWARMS && !isActive(engines[hash])) engines[hash].swarm.pause(); // Stop swarms
     }
 });
+
+/* Destroy old instances */
+setInterval(function() {
+    if (policy.CLOSE_INACTIVE_AFTER) for (hash in engines) {
+        var e = engines[hash];
+        var isStale = e.__linvofs_last_active 
+            && Date.now()-e.__linvofs_last_active.getTime() > policy.CLOSE_INACTIVE_AFTER
+            && !e.swarm.downloadSpeed();
+
+        if (isStale) {
+            e.destroy();
+            delete engines[hash];
+        }
+    }
+}, 1000);
 
 function isActive(engine) { 
     return engine.files.some(function(f) { return f.__linvofs_active })
