@@ -222,7 +222,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 * TODO: cfg parameters: CLOSE_AFTER = milliseconds, PAUSE_SWARMS - bool, STOP_BG_DOWNLOADS - onopen/onclose
 */
 var policy = LinvoFS.policy = {
-    CLOSE_INACTIVE_AFTER: 1*60*1000,
+    CLOSE_INACTIVE_AFTER: 5*60*1000,
     STOP_SWARMS: true,
     STOP_BKG_DOWNLOAD: true
 };
