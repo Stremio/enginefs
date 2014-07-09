@@ -221,7 +221,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 * Stop unrequested downloads on every new request, something like garbage collecting
 * TODO: cfg parameters: CLOSE_AFTER = milliseconds, PAUSE_SWARMS - bool, STOP_BG_DOWNLOADS - onopen/onclose
 */
-var policy = {
+var policy = LinvoFS.policy = {
     CLOSE_INACTIVE_AFTER: 5*60*1000,
     STOP_SWARMS: true,
     STOP_BKG_DOWNLOAD: true
