@@ -43,8 +43,10 @@ function createEngine(infoHash, options, cb)
     if (options.peers) options.peers.forEach(function(p) { e.connect(p) });
     if (options.peerStream) byline(request(options.peerStream)).on("data", function(d) { e.connect(d.toString()) });
 
-    if (e.torrent) cb(null, e);
-    else e.on("ready", function() { cb(null, e) });
+    e.ready(function() {
+        e.files.forEach(function(f) { f.__linvofs_active = 0 });
+        cb(null, e);
+    });
     
     LinvoFS.emit("torrentEngine", infoHash, e);
  
@@ -229,14 +231,14 @@ var policy = LinvoFS.policy = {
 
 LinvoFS.on("closed", function(hash, fileIndex, e)
 { 
-    e.files[fileIndex].__linvofs_active = false;
+    e.files[fileIndex].__linvofs_active--;
     if (!isActive(e)) e.__linvofs_last_active = new Date();
 });
 
 LinvoFS.on("opened", function(infoHash, fileIndex, e)
 {
     delete e.__linvofs_last_active;
-    e.files[fileIndex].__linvofs_active = true;
+    e.files[fileIndex].__linvofs_active++;
     for (hash in engines) {
         var files = engines[hash].files;
 
