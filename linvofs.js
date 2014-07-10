@@ -144,13 +144,13 @@ function createServer(port)
 var active = {};
 LinvoFS.on("opened", function(hash) { active[hash] = true });
 LinvoFS.on("closed", function(hash) { delete active[hash] });
-setInterval(function() {
+/*setInterval(function() {
     for (hash in engines)
     {
         if (active[hash]) 
             LinvoFS.emit("stats:"+hash, getStatistics(engines[hash]));
     };
-}, 50);
+}, 50);*/
 function getStatistics(e)
 {
     return {
