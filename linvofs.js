@@ -220,6 +220,8 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
     /* New torrent-stream writes pieces only when they're verified, which means virtuals are
      * not going to be written down, which means we have a change to play a file without having it
      * fully commited to disk; make sure we do that by downloading the entire file in verified pieces 
+     * 
+     * Plus, we always guarantee we have the whole file requested
      */
     var startPiece = (file.offset / e.torrent.realPieceLength) | 0;
     var endPiece = ((file.offset+file.length-1) / e.torrent.realPieceLength) | 0;
@@ -253,7 +255,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
         var files = engines[hash].files;
 
         if (policy.STOP_BKG_DOWNLOAD) files.forEach(function(f) { if (!f.__linvofs_active) f.deselect() }); // Deselect files
-        if (policy.STOP_SWARMS && !isActive(engines[hash])) engines[hash].swarm.pause(); // Stop swarms
+        if (policy.STOP_SWARMS && !isActive(engines[hash]) && Date.now()-e.__linvofs_last_active.getTime() > 60*1000) engines[hash].swarm.pause(); // Stop swarms
     }
 });
 
