@@ -255,7 +255,7 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
         var files = engines[hash].files;
 
         if (policy.STOP_BKG_DOWNLOAD) files.forEach(function(f) { if (!f.__linvofs_active) f.deselect() }); // Deselect files
-        if (policy.STOP_SWARMS && !isActive(engines[hash]) && Date.now()-e.__linvofs_last_active.getTime() > 60*1000) engines[hash].swarm.pause(); // Stop swarms
+        if (policy.STOP_SWARMS && !isActive(engines[hash])/* && Date.now()-e.__linvofs_last_active.getTime() > 60*1000*/) engines[hash].swarm.pause(); // Stop swarms
     }
 });
 
