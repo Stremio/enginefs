@@ -211,10 +211,20 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
         e.removeListener("download", onDownload);
         e.removeListener("verify", onDownload);
     };
-    e.on("download", onDownload);
-    e.on("verify", onDownload);
+    //e.on("download", onDownload); // only consider verified pieces downloaded, 
+    e.on("verify", onDownload);  // since last torrent-stream only verify guarantees that piece is written
 
     onDownload(); // initial call in case file is already done
+
+
+    /* New torrent-stream writes pieces only when they're verified, which means virtuals are
+     * not going to be written down, which means we have a change to play a file without having it
+     * fully commited to disk; make sure we do that by downloading the entire file in verified pieces 
+     */
+    var startPiece = (file.offset / e.torrent.realPieceLength) | 0;
+    var endPiece = ((file.offset+file.length-1) / e.torrent.realPieceLength) | 0;
+    var ratio = e.torrent.realPieceLength / e.torrent.pieceLength;
+    e.select(startPiece*ratio, (endPiece+1)*ratio, false);
 });
 
 
