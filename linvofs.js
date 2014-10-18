@@ -120,6 +120,7 @@ function createServer(port)
             range = range && rangeParser(handle.length, range)[0];
             response.setHeader("Accept-Ranges", "bytes");
             response.setHeader("Content-Type", mime.lookup(handle.name));
+            response.setHeader("Cache-Control", "max-age=0, no-cache");
 
             if (!range) {
                 response.setHeader("Content-Length", handle.length);
