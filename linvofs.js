@@ -38,6 +38,12 @@ function createEngine(infoHash, options, cb)
     if (options.torrent && typeof(options.torrent)=="string") options.torrent = new Buffer(options.torrent, "base64");
 
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
+
+    /* Reset the engine if it's inactive */
+    if (engines[infoHash] && !engines[infoHash].swarm.downloadSpeed()) {
+        engines[infoHash].destroy();
+        engines[infoHash] = null;
+    };
     var e = engines[infoHash] = engines[infoHash] || engine(torrent, options);
 
     if (options.peers) options.peers.forEach(function(p) { e.connect(p) });
@@ -278,6 +284,9 @@ function isActive(engine) {
     return engine.files.some(function(f) { return f.__linvofs_active })
 }
 
+/*
+ * TODO: resume stuff if we have no active 
+ */
 
 /*
 * Clean-up: maybe remove idle engines?
