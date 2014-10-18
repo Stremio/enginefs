@@ -40,12 +40,13 @@ function createEngine(infoHash, options, cb)
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
     /* Reset the engine if it's inactive */
-    if (engines[infoHash] && !engines[infoHash].swarm.downloadSpeed()) {
+    if (engines[infoHash] && !engines[infoHash].swarm.downloadSpeed() && (Date.now()-engines[infoHash].__updated.getTime() > 60*1000) ) {
         engines[infoHash].destroy();
         engines[infoHash] = null;
     };
     var e = engines[infoHash] = engines[infoHash] || engine(torrent, options);
-
+    e.__updated = new Date();
+    
     if (options.peers) options.peers.forEach(function(p) { e.connect(p) });
     if (options.peerStream) byline(request(options.peerStream)).on("data", function(d) { e.connect(d.toString()) });
 
