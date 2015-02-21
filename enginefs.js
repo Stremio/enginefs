@@ -28,6 +28,7 @@ var EngineFS =  new events.EventEmitter();
 // stream-progress stream-progress:hash:idx
  
 // engine-created
+
 // engine-active
 // engine-idle
 // engine-inactive
@@ -234,6 +235,12 @@ EngineFS.on("stream-open", function(infoHash, fileIndex, e)
 /*  
  * More events wiring: stream-inactive, engine-active, engine-idle, engine-inactive
  */
+function Emit(args)
+{
+    // Allow us to listen to events for a specific stream as well as in general (e.g. stream-close(hash,idx) vs stream-close:hash:idx)
+    EngineFS.emit.apply(EngineFS, args);
+    EngineFS.emit(args.join(":"));
+};
 
 // Increment/decrement a counter on `incEv`/`decEv`; generate the ID of the counter with `idFn`
 // Calls `onPositive` when counter is >0 and `onZero` when counter has stayed on 0 for `timeout` milliseconds
@@ -242,7 +249,7 @@ function Counter(incEv, decEv, idFn, onPositive, onZero, timeout)
     var counter = {}, timeouts = {};
     EngineFS.on(incEv, function(hash, idx) {
         var id = idFn(hash, idx);
-        if (! counter[id]) { counter[id] = 0; onPositive(hash, idx); }
+        if (! counter.hasOwnProperty(id)) { counter[id] = 0; onPositive(hash, idx); }
         counter[id]++;
 
         if (timeouts[id]) {
@@ -255,27 +262,28 @@ function Counter(incEv, decEv, idFn, onPositive, onZero, timeout)
         counter[id]--;
         if (counter[id] == 0) {
             if (timeouts[id]) clearTimeout(timeouts[id]);
-            timeouts[id] = setTimeout(function() { onZero(hash, idx) }, timeout);
+            timeouts[id] = setTimeout(function() { 
+                onZero(hash, idx); 
+                delete counter[id]; delete timeouts[id];
+            }, timeout);
         };
     });
 };
 
-new Counter("stream-open", "stream-close", function(hash, idx) { return hash+":"+idx }, function() { }, function(hash, idx) {  
-    EngineFS.emit("stream-inactive", hash, idx);
-    EngineFS.emit("stream-inactive:"+hash+":"+idx);
+new Counter("stream-open", "stream-close", function(hash, idx) { return hash+":"+idx }, function(hash, idx) { 
+    Emit(["stream-active",hash,idx])
+}, function(hash, idx) {  
+    Emit(["stream-inactive",hash,idx])
 }, STREAM_TIMEOUT);
 
 new Counter("stream-open", "stream-close", function(hash, idx) { return hash }, function(hash) {
-    EngineFS.emit("engine-active", hash);
-    EngineFS.emit("engine-active:"+hash);    
+    Emit(["engine-active",hash]);
 }, function(hash) {  
-    EngineFS.emit("engine-inactive", hash);
-    EngineFS.emit("engine-inactive:"+hash);
+    Emit(["engine-inactive",hash]);
 }, STREAM_TIMEOUT);
 
-new Counter("stream-open", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
-    EngineFS.emit("engine-idle", hash);
-    EngineFS.emit("engine-idle:"+hash);
+new Counter("stream-active", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
+    Emit(["engine-idle",hash]);
 }, STREAM_TIMEOUT);
 
 
@@ -283,5 +291,5 @@ module.exports = EngineFS;
 module.exports.http = createServer;
 // FUSE: TODO
 
-module.exports.engine = createEngine;
+module.exports.create = createEngine;
 

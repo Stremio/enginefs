@@ -1,13 +1,13 @@
 {
-  "name": "linvofs",
+  "name": "enginefs",
   "preferGlobal": true,
-  "version": "0.1.4",
+  "version": "1.0.0",
   "author": "Ivo Georgiev <ivo@linvo.com>",
-  "description": "LinvoFS - accessing files via P2P",
-  "main": "./linvofs",
+  "description": "EngineFS - use & manage stream-engines",
+  "main": "./enginefs",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Ivshti/linvofs.git"
+    "url": "https://github.com/Ivshti/enginefs.git"
   },
   "dependencies" : {
     "mime": "^1.2.11",
