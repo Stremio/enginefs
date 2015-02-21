@@ -15,8 +15,8 @@ var byline = require("byline");
 
 var _  = require("underscore");
 
-var LinvoFS = { };
-_.extend(LinvoFS, new events.EventEmitter());
+var EngineFS = { };
+_.extend(EngineFS, new events.EventEmitter());
 
 
 // engine
@@ -26,7 +26,7 @@ _.extend(LinvoFS, new events.EventEmitter());
 // stream-inactive 
 
 // stream-cached
-// stream-cached-progress
+// stream-progress
 
 // engine-active
 // engine-idle
@@ -66,7 +66,7 @@ function createEngine(infoHash, options, cb)
         cb(null, e);
     });
     
-    LinvoFS.emit("torrentEngine", infoHash, e);
+    EngineFS.emit("torrentEngine", infoHash, e);
  
     return e;
 }
@@ -120,8 +120,8 @@ function createServer(port)
             if (err) { console.error(err); response.statusCode = 500; return response.end(); }
             
             // Handle LinvoFS events
-            LinvoFS.emit("opened", e.infoHash, e.files.indexOf(handle), e);
-            var emitClose = function() { LinvoFS.emit("closed", e.infoHash, e.files.indexOf(handle), e) };
+            EngineFS.emit("opened", e.infoHash, e.files.indexOf(handle), e);
+            var emitClose = function() { EngineFS.emit("closed", e.infoHash, e.files.indexOf(handle), e) };
             response.on("finish", emitClose);
             response.on("close", emitClose);
 
@@ -163,8 +163,8 @@ function createServer(port)
 * Update torrent-stream stats periodically
 */
 var active = {};
-LinvoFS.on("opened", function(hash) { active[hash] = true });
-LinvoFS.on("closed", function(hash) { delete active[hash] });
+EngineFS.on("opened", function(hash) { active[hash] = true });
+EngineFS.on("closed", function(hash) { delete active[hash] });
 
 function getStatistics(e)
 {
@@ -194,7 +194,7 @@ function getStatistics(e)
 * cached:fileID filePath
 * cachedProgress:fileID filePath percent 
 */
-LinvoFS.on("opened", function(infoHash, fileIndex, e)
+EngineFS.on("opened", function(infoHash, fileIndex, e)
 {
     var file = e.torrent.files[fileIndex];
     if (file.__cacheEvents) return;
@@ -214,12 +214,12 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
             fpieces.splice(idx, 1);
         }
 
-        LinvoFS.emit("cachedProgress:"+infoHash+":"+fileIndex, (filePieces-fpieces.length)/filePieces, fpath);
+        EngineFS.emit("stream-progress:"+infoHash+":"+fileIndex, (filePieces-fpieces.length)/filePieces, fpath);
 
         if (fpieces.length) return;
 
         var fpath = e.store.getDest(fileIndex);
-        LinvoFS.emit("cached:"+infoHash+":"+fileIndex, fpath);
+        EngineFS.emit("stream-cached:"+infoHash+":"+fileIndex, fpath);
 
         e.removeListener("download", onDownload);
         e.removeListener("verify", onDownload);
@@ -248,19 +248,19 @@ LinvoFS.on("opened", function(infoHash, fileIndex, e)
 * Stop unrequested downloads on every new request, something like garbage collecting
 * TODO: cfg parameters: CLOSE_AFTER = milliseconds, PAUSE_SWARMS - bool, STOP_BG_DOWNLOADS - onopen/onclose
 */
-var policy = LinvoFS.policy = {
+var policy = EngineFS.policy = {
     CLOSE_INACTIVE_AFTER: 5*60*1000,
     STOP_SWARMS: true,
     STOP_BKG_DOWNLOAD: true
 };
 
-LinvoFS.on("closed", function(hash, fileIndex, e)
+EngineFS.on("closed", function(hash, fileIndex, e)
 { 
     e.files[fileIndex].__linvofs_active--;
     if (!isActive(e)) e.__linvofs_last_active = new Date();
 });
 
-LinvoFS.on("opened", function(infoHash, fileIndex, e)
+EngineFS.on("opened", function(infoHash, fileIndex, e)
 {
     delete e.__linvofs_last_active;
     e.files[fileIndex].__linvofs_active++;
@@ -300,7 +300,7 @@ function isActive(engine) {
 */
 
 
-module.exports = LinvoFS;
+module.exports = EngineFS;
 module.exports.http = createServer;
 // FUSE: TODO
 
