@@ -127,6 +127,9 @@ function createServer(port)
             response.setHeader("Accept-Ranges", "bytes");
             response.setHeader("Content-Type", mime.lookup(handle.name));
             response.setHeader("Cache-Control", "max-age=0, no-cache");
+            
+            // CORS? research in peerflix - https://github.com/mafintosh/peerflix/blob/master/index.js
+            //response.setHeader("Access-Control-Max-Age", "1728000");
 
             if (!range) {
                 response.setHeader("Content-Length", handle.length);
