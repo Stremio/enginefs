@@ -15,19 +15,18 @@ var byline = require("byline");
 
 var _  = require("lodash");
 
-var EngineFS = { };
-_.extend(EngineFS, new events.EventEmitter());
+var EngineFS =  new events.EventEmitter();
 
 
 // engine
 
 // stream-open
 // stream-close
-// stream-inactive
+// stream-inactive stream-inactive:hash:idx
 
-// stream-cached
-// stream-progress
-
+// stream-cached stream-cached:hash:idx
+// stream-progress stream-progress:hash:idx
+ 
 // engine-created
 // engine-active
 // engine-idle
@@ -116,7 +115,7 @@ function createServer(port)
             if (err) { console.error(err); response.statusCode = 500; return response.end(); }
             
             // Handle LinvoFS events
-            EngineFS.emit("stream-active", e.infoHash, e.files.indexOf(handle), e);
+            EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle), e);
             var emitClose = function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle), e) };
             response.on("finish", emitClose);
             response.on("close", emitClose);
@@ -148,7 +147,7 @@ function createServer(port)
 	
 	if (port) server.listen(port);
 	return server;    
-}
+};
  
 /* Front-end: FUSE
  */
@@ -183,7 +182,7 @@ function getStatistics(e)
 * stream-cached:fileID filePath
 * stream-progress:fileID filePath percent 
 */
-EngineFS.on("opened", function(infoHash, fileIndex, e)
+EngineFS.on("stream-open", function(infoHash, fileIndex, e)
 {
     var file = e.torrent.files[fileIndex];
     if (file.__cacheEvents) return;
@@ -209,6 +208,7 @@ EngineFS.on("opened", function(infoHash, fileIndex, e)
 
         var fpath = e.store.getDest(fileIndex);
         EngineFS.emit("stream-cached:"+infoHash+":"+fileIndex, fpath);
+        EngineFS.emit("stream-cached", infoHash, fileIndex, fpath);
 
         e.removeListener("download", onDownload);
         e.removeListener("verify", onDownload);
@@ -231,53 +231,53 @@ EngineFS.on("opened", function(infoHash, fileIndex, e)
 });
 
 
-/*
-* Prioritize downloads for opened files
-* Stop unrequested downloads on every new request, something like garbage collecting
-* TODO: cfg parameters: CLOSE_AFTER = milliseconds, PAUSE_SWARMS - bool, STOP_BG_DOWNLOADS - onopen/onclose
-*/
-var policy = EngineFS.policy = {
-    CLOSE_INACTIVE_AFTER: 5*60*1000,
-    STOP_SWARMS: true,
-    STOP_BKG_DOWNLOAD: true
+/*  
+ * More events wiring: stream-inactive, engine-active, engine-idle, engine-inactive
+ */
+
+// Increment/decrement a counter on `incEv`/`decEv`; generate the ID of the counter with `idFn`
+// Calls `onPositive` when counter is >0 and `onZero` when counter has stayed on 0 for `timeout` milliseconds
+function Counter(incEv, decEv, idFn, onPositive, onZero, timeout)
+{
+    var counter = {}, timeouts = {};
+    EngineFS.on(incEv, function(hash, idx) {
+        var id = idFn(hash, idx);
+        if (! counter[id]) { counter[id] = 0; onPositive(hash, idx); }
+        counter[id]++;
+
+        if (timeouts[id]) {
+            clearTimeout(timeouts[id]);
+            delete timeouts[id];
+        };
+    });
+    EngineFS.on(decEv, function(hash, idx) {
+        var id = idFn(hash, idx);
+        counter[id]--;
+        if (counter[id] == 0) {
+            if (timeouts[id]) clearTimeout(timeouts[id]);
+            timeouts[id] = setTimeout(function() { onZero(hash, idx) }, timeout);
+        };
+    });
 };
 
-EngineFS.on("closed", function(hash, fileIndex, e)
-{ 
-    e.files[fileIndex].__linvofs_active--;
-    if (!isActive(e)) e.__linvofs_last_active = new Date();
-});
+new Counter("stream-open", "stream-close", function(hash, idx) { return hash+":"+idx }, function() { }, function(hash, idx) {  
+    EngineFS.emit("stream-inactive", hash, idx);
+    EngineFS.emit("stream-inactive:"+hash+":"+idx);
+}, STREAM_TIMEOUT);
 
-EngineFS.on("opened", function(infoHash, fileIndex, e)
-{
-    delete e.__linvofs_last_active;
-    e.files[fileIndex].__linvofs_active++;
-    for (hash in engines) {
-        var files = engines[hash].files;
+new Counter("stream-open", "stream-close", function(hash, idx) { return hash }, function(hash) {
+    EngineFS.emit("engine-active", hash);
+    EngineFS.emit("engine-active:"+hash);    
+}, function(hash) {  
+    EngineFS.emit("engine-inactive", hash);
+    EngineFS.emit("engine-inactive:"+hash);
+}, STREAM_TIMEOUT);
 
-        if (policy.STOP_BKG_DOWNLOAD) files.forEach(function(f) { if (!f.__linvofs_active) f.deselect() }); // Deselect files
-        if (policy.STOP_SWARMS && !isActive(engines[hash])/* && Date.now()-e.__linvofs_last_active.getTime() > 60*1000*/) engines[hash].swarm.pause(); // Stop swarms
-    }
-});
+new Counter("stream-open", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
+    EngineFS.emit("engine-idle", hash);
+    EngineFS.emit("engine-idle:"+hash);
+}, STREAM_TIMEOUT);
 
-/* Destroy old instances */
-setInterval(function() {
-    if (policy.CLOSE_INACTIVE_AFTER) for (hash in engines) {
-        var e = engines[hash];
-        var isStale = e.__linvofs_last_active 
-            && Date.now()-e.__linvofs_last_active.getTime() > policy.CLOSE_INACTIVE_AFTER
-            && !e.swarm.downloadSpeed();
-
-        if (isStale) {
-            e.destroy();
-            delete engines[hash];
-        }
-    }
-}, 1000);
-
-function isActive(engine) { 
-    return engine.files.some(function(f) { return f.__linvofs_active })
-}
 
 module.exports = EngineFS;
 module.exports.http = createServer;
