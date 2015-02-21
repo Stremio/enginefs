@@ -34,7 +34,7 @@ var EngineFS =  new events.EventEmitter();
 // engine-inactive
 
 // TODO Provide option for those to be changed
-var STREAM_TIMEOUT = 15*1000; // how long must a stream be unused to be considered 'inactive'
+var STREAM_TIMEOUT = 10*1000; // how long must a stream be unused to be considered 'inactive'
 
 var engines = EngineFS.engines = {};
 
