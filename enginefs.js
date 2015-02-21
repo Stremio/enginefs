@@ -13,7 +13,7 @@ var pump = require("pump");
 var request = require("request");
 var byline = require("byline");
 
-var _  = require("underscore");
+var _  = require("lodash");
 
 var EngineFS = { };
 _.extend(EngineFS, new events.EventEmitter());
@@ -21,22 +21,22 @@ _.extend(EngineFS, new events.EventEmitter());
 
 // engine
 
-// stream-active
-// stream-idle
-// stream-inactive 
+// stream-open
+// stream-close
+// stream-inactive
 
 // stream-cached
 // stream-progress
 
+// engine-created
 // engine-active
 // engine-idle
 // engine-inactive
 
+// TODO Provide option for those to be changed
+var STREAM_TIMEOUT = 15*1000; // how long must a stream be unused to be considered 'inactive'
 
-/* Backend
- */
-var engine = require("torrent-stream");
-var engines = engine.engines = {};
+var engines = EngineFS.engines = {};
 
 var defaultOptions = {
     /* Options */
@@ -46,6 +46,8 @@ var defaultOptions = {
 
 function createEngine(infoHash, options, cb)
 {
+    if (! module.exports.engine) throw new Error("EngineFS requires EngineFS.engine to point to engine constructor");
+
     var cb = cb || function() { };
 
     if (options.torrent && Array.isArray(options.torrent)) options.torrent = new Buffer(options.torrent);
@@ -53,20 +55,14 @@ function createEngine(infoHash, options, cb)
 
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
-    /* Reset the engine if it's inactive; WARNING: THIS WILL BE REFACTORED, we'll reset peer-search here */
-    if (engines[infoHash] && !engines[infoHash].swarm.downloadSpeed() && (Date.now()-engines[infoHash].__updated.getTime() > 60*1000) ) {
-        engines[infoHash].destroy();
-        engines[infoHash] = null;
-    };
-    var e = engines[infoHash] = engines[infoHash] || engine(torrent, options);
+    var e = engines[infoHash] = engines[infoHash] || module.exports.engine(torrent, options);
     e.__updated = new Date();
 
     e.ready(function() {
-        e.files.forEach(function(f) { f.__linvofs_active = 0 });
         cb(null, e);
     });
     
-    EngineFS.emit("torrentEngine", infoHash, e);
+    EngineFS.emit("engine-created", e);
  
     return e;
 }
@@ -120,8 +116,8 @@ function createServer(port)
             if (err) { console.error(err); response.statusCode = 500; return response.end(); }
             
             // Handle LinvoFS events
-            EngineFS.emit("opened", e.infoHash, e.files.indexOf(handle), e);
-            var emitClose = function() { EngineFS.emit("closed", e.infoHash, e.files.indexOf(handle), e) };
+            EngineFS.emit("stream-active", e.infoHash, e.files.indexOf(handle), e);
+            var emitClose = function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle), e) };
             response.on("finish", emitClose);
             response.on("close", emitClose);
 
@@ -159,13 +155,6 @@ function createServer(port)
 // TODO
 
 
-/*
-* Update torrent-stream stats periodically
-*/
-var active = {};
-EngineFS.on("opened", function(hash) { active[hash] = true });
-EngineFS.on("closed", function(hash) { delete active[hash] });
-
 function getStatistics(e)
 {
     return {
@@ -191,8 +180,8 @@ function getStatistics(e)
 
 /*
 * Emit events
-* cached:fileID filePath
-* cachedProgress:fileID filePath percent 
+* stream-cached:fileID filePath
+* stream-progress:fileID filePath percent 
 */
 EngineFS.on("opened", function(infoHash, fileIndex, e)
 {
@@ -228,7 +217,6 @@ EngineFS.on("opened", function(infoHash, fileIndex, e)
     e.on("verify", onDownload);  // since last torrent-stream only verify guarantees that piece is written
 
     onDownload(); // initial call in case file is already done
-
 
     /* New torrent-stream writes pieces only when they're verified, which means virtuals are
      * not going to be written down, which means we have a change to play a file without having it
@@ -291,18 +279,9 @@ function isActive(engine) {
     return engine.files.some(function(f) { return f.__linvofs_active })
 }
 
-/*
- * TODO: resume stuff if we have no active 
- */
-
-/*
-* Clean-up: maybe remove idle engines?
-*/
-
-
 module.exports = EngineFS;
 module.exports.http = createServer;
 // FUSE: TODO
 
-module.exports.createTorrentEngine = createEngine;
+module.exports.engine = createEngine;
 
