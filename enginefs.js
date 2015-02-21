@@ -19,6 +19,20 @@ var LinvoFS = { };
 _.extend(LinvoFS, new events.EventEmitter());
 
 
+// engine
+
+// stream-active
+// stream-idle
+// stream-inactive 
+
+// stream-cached
+// stream-cached-progress
+
+// engine-active
+// engine-idle
+// engine-inactive
+
+
 /* Backend
  */
 var engine = require("torrent-stream");
@@ -46,10 +60,6 @@ function createEngine(infoHash, options, cb)
     };
     var e = engines[infoHash] = engines[infoHash] || engine(torrent, options);
     e.__updated = new Date();
-    
-    // Will be obsolete, we use peer-search for that
-    if (options.peers) options.peers.forEach(function(p) { e.connect(p) });
-    if (options.peerStream) byline(request(options.peerStream)).on("data", function(d) { e.connect(d.toString()) });
 
     e.ready(function() {
         e.files.forEach(function(f) { f.__linvofs_active = 0 });
@@ -155,13 +165,7 @@ function createServer(port)
 var active = {};
 LinvoFS.on("opened", function(hash) { active[hash] = true });
 LinvoFS.on("closed", function(hash) { delete active[hash] });
-/*setInterval(function() {
-    for (hash in engines)
-    {
-        if (active[hash]) 
-            LinvoFS.emit("stats:"+hash, getStatistics(engines[hash]));
-    };
-}, 50);*/
+
 function getStatistics(e)
 {
     return {
@@ -301,13 +305,4 @@ module.exports.http = createServer;
 // FUSE: TODO
 
 module.exports.createTorrentEngine = createEngine;
-
-if (process.send) 
-{
-	var dnode = require("dnode");
-	var server = dnode(LinvoFS, { /*emit: "object", */ weak:false }); // Don't emit as objects; Node IPC uses JSON serialization either way, and still loses special objects - e.g. Date and Buffer
-
-	server.on("data", function(d) { if (process.send) process.send(d) });
-	process.on("message", function(msg) { server.write(msg) });
-}
 
