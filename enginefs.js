@@ -35,6 +35,7 @@ var EngineFS =  new events.EventEmitter();
 
 // TODO Provide option for those to be changed
 var STREAM_TIMEOUT = 10*1000; // how long must a stream be unused to be considered 'inactive'
+var ENGINE_TIMEOUT = 60*1000; 
 
 var engines = EngineFS.engines = {};
 
@@ -56,11 +57,8 @@ function createEngine(infoHash, options, cb)
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
     var e = engines[infoHash] = engines[infoHash] || module.exports.engine(torrent, options);
-    e.__updated = new Date();
-
-    e.ready(function() {
-        cb(null, e);
-    });
+    e.swarm.resume(); // In case it's paused
+    e.ready(function() { cb(null, e) });
     
     EngineFS.emit("engine-created", e);
  
@@ -280,7 +278,7 @@ new Counter("stream-open", "stream-close", function(hash, idx) { return hash }, 
     Emit(["engine-active",hash]);
 }, function(hash) {  
     Emit(["engine-inactive",hash]);
-}, STREAM_TIMEOUT);
+}, ENGINE_TIMEOUT); // Keep engines active for STREAM_TIMEOUT * 60
 
 new Counter("stream-active", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
     Emit(["engine-idle",hash]);
