@@ -59,7 +59,7 @@ function createEngine(infoHash, options, cb)
 
 function requestEngine(infoHash, cb) 
 {
-    if (engines[infoHash]) return cb(null, engines[infoHash]);
+    if (engines[infoHash]) return engines[infoHash].ready(function() { cb(null, engines[infoHash]) });
 
     EngineFS.emit("request", infoHash);
     EngineFS.once("engine-created:"+infoHash, function() {
