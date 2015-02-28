@@ -34,8 +34,8 @@ var EngineFS =  new events.EventEmitter();
 // engine-inactive
 
 // TODO Provide option for those to be changed
-var STREAM_TIMEOUT = 10*1000; // how long must a stream be unused to be considered 'inactive'
-var ENGINE_TIMEOUT = 10*60*60*1000; 
+EngineFS.STREAM_TIMEOUT = 10*1000; // how long must a stream be unused to be considered 'inactive'
+EngineFS.ENGINE_TIMEOUT = 60*1000; 
 
 var engines = EngineFS.engines = {};
 
@@ -278,17 +278,17 @@ new Counter("stream-open", "stream-close", function(hash, idx) { return hash+":"
     Emit(["stream-active",hash,idx])
 }, function(hash, idx) {  
     Emit(["stream-inactive",hash,idx])
-}, STREAM_TIMEOUT);
+}, EngineFS.STREAM_TIMEOUT);
 
 new Counter("stream-open", "stream-close", function(hash, idx) { return hash }, function(hash) {
     Emit(["engine-active",hash]);
 }, function(hash) {  
     Emit(["engine-inactive",hash]);
-}, ENGINE_TIMEOUT); // Keep engines active for STREAM_TIMEOUT * 60
+}, EngineFS.ENGINE_TIMEOUT); // Keep engines active for STREAM_TIMEOUT * 60
 
 new Counter("stream-active", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
     Emit(["engine-idle",hash]);
-}, STREAM_TIMEOUT);
+}, EngineFS.STREAM_TIMEOUT);
 
 
 module.exports = EngineFS;
