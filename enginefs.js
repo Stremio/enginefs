@@ -63,7 +63,7 @@ function requestEngine(infoHash, cb)
 
     EngineFS.emit("request", infoHash);
     EngineFS.once("engine-created:"+infoHash, function() {
-        cb(null, engines[infoHash]);
+        if (engines[infoHash]) engines[infoHash].ready(function(){ cb(null, engines[infoHash]) });
     });
 }
 
