@@ -39,20 +39,11 @@ EngineFS.ENGINE_TIMEOUT = 60*1000;
 
 var engines = EngineFS.engines = {};
 
-var defaultOptions = {
-    /* Options */
-    connections: os.cpus().length > 1 ? 100 : 30,
-    virtual: true
-};
-
 function createEngine(infoHash, options, cb)
 {
     if (! module.exports.engine) throw new Error("EngineFS requires EngineFS.engine to point to engine constructor");
 
     var cb = cb || function() { };
-
-    if (options.torrent && Array.isArray(options.torrent)) options.torrent = new Buffer(options.torrent);
-    if (options.torrent && typeof(options.torrent)=="string") options.torrent = new Buffer(options.torrent, "base64");
 
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
@@ -61,8 +52,19 @@ function createEngine(infoHash, options, cb)
     e.ready(function() { cb(null, e) });
     
     EngineFS.emit("engine-created", e);
+    EngineFS.emit("engine-created:"+infoHash, e);
  
     return e;
+}
+
+function requestEngine(infoHash, cb) 
+{
+    if (engines[infoHash]) return cb(null, engines[infoHash]);
+
+    EngineFS.emit("request", infoHash);
+    EngineFS.once("engine-created:"+infoHash, function() {
+        cb(null, engines[infoHash]);
+    });
 }
 
 function openPath(path, cb)
@@ -76,7 +78,7 @@ function openPath(path, cb)
 
 		if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index"));
         
-        createEngine(infoHash, defaultOptions, function(err, engine)
+        requestEngine(infoHash, function(err, engine)
         {
             if (err) return cb(err);
             if (! engine.files[i]) return cb(new Error("Torrent does not contain file with index "+i));
