@@ -194,6 +194,7 @@ EngineFS.on("stream-open", function(infoHash, fileIndex, e)
     var file = e.torrent.files[fileIndex];
     if (file.__cacheEvents) return;
     file.__cacheEvents = true;
+    EngineFS.emit("stream-created", infoHash, fileIndex, e);
 
     var startPiece = (file.offset / e.torrent.pieceLength) | 0;
     var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
@@ -288,7 +289,7 @@ new Counter("stream-open", "stream-close", function(hash, idx) { return hash }, 
     Emit(["engine-inactive",hash]);
 }, EngineFS.ENGINE_TIMEOUT); // Keep engines active for STREAM_TIMEOUT * 60
 
-new Counter("stream-active", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
+new Counter("stream-created", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
     Emit(["engine-idle",hash]);
 }, EngineFS.STREAM_TIMEOUT);
 
