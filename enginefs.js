@@ -57,6 +57,11 @@ function createEngine(infoHash, options, cb)
     return e;
 }
 
+function getEngine(infoHash) 
+{
+	return engines[infoHash.toLowerCase()];	
+}
+
 function requestEngine(infoHash, cb) 
 {
     if (engines[infoHash]) return engines[infoHash].ready(function() { cb(null, engines[infoHash]) });
@@ -299,4 +304,4 @@ module.exports.http = createServer;
 // FUSE: TODO
 
 module.exports.create = createEngine;
-
+module.exports.get = getEngine;
