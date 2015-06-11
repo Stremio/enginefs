@@ -37,7 +37,7 @@ var EngineFS =  new events.EventEmitter();
 EngineFS.STREAM_TIMEOUT = 30*1000; // how long must a stream be unused to be considered 'inactive'
 EngineFS.ENGINE_TIMEOUT = 60*1000; 
 
-var engines = EngineFS.engines = {};
+var engines = {};
 
 function createEngine(infoHash, options, cb)
 {
