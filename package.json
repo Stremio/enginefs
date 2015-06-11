@@ -1,7 +1,6 @@
 {
   "name": "enginefs",
-  "preferGlobal": true,
-  "version": "1.1.1",
+  "version": "1.2.0",
   "author": "Ivo Georgiev <ivo@linvo.com>",
   "description": "EngineFS - use & manage stream-engines",
   "main": "./enginefs",
