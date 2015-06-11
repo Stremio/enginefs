@@ -68,10 +68,10 @@ function removeEngine(infoHash)
 	delete engines[infoHash];
 }
 
-function statsEngine(infoHash)
+function statsEngine(infoHash, idx)
 {
 	if (!engines[infoHash]) return;
-	return getStatistics(engines[infoHash]);
+	return getStatistics(engines[infoHash], idx);
 }
 
 function listEngines()
@@ -183,9 +183,9 @@ function createServer(port)
 // TODO
 
 
-function getStatistics(e)
+function getStatistics(e, idx)
 {
-    return {
+    var s = {
         peers: e.swarm.wires.length,
         unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
         queued: e.swarm.queued,
@@ -203,6 +203,11 @@ function getStatistics(e)
         dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
         dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
     };
+    // TODO: better stream-specific data; e.g. download/uploaded should only be specific to this stream
+    if (typeof(idx) == "number" && e.torrent.files[idx]) {
+        s.streamLen = e.torrent.files[idx].length;
+    };
+    return s;
 }
 
 
