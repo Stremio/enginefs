@@ -62,6 +62,17 @@ function getEngine(infoHash)
 	return engines[infoHash.toLowerCase()];	
 }
 
+function removeEngine(infoHash)
+{
+	engines[infoHash].destroy();
+	delete engines[infoHash];
+}
+
+function listEngines()
+{
+	return Object.keys(engines);
+}
+
 function requestEngine(infoHash, cb) 
 {
     if (engines[infoHash]) return engines[infoHash].ready(function() { cb(null, engines[infoHash]) });
@@ -305,3 +316,5 @@ module.exports.http = createServer;
 
 module.exports.create = createEngine;
 module.exports.get = getEngine;
+module.exports.remove = removeEngine;
+module.exports.list = listEngines;
