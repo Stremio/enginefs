@@ -68,6 +68,12 @@ function removeEngine(infoHash)
 	delete engines[infoHash];
 }
 
+function statsEngine(infoHash)
+{
+	if (!engines[infoHash]) return;
+	return getStatistics(engines[infoHash]);
+}
+
 function listEngines()
 {
 	return Object.keys(engines);
@@ -317,4 +323,5 @@ module.exports.http = createServer;
 module.exports.create = createEngine;
 module.exports.get = getEngine;
 module.exports.remove = removeEngine;
+module.exports.stats = statsEngine;
 module.exports.list = listEngines;
