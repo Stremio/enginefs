@@ -204,7 +204,7 @@ function getStatistics(e, idx)
         dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
     };
     // TODO: better stream-specific data; e.g. download/uploaded should only be specific to this stream
-    if (typeof(idx) == "number" && e.torrent.files[idx]) {
+    if (typeof(idx) == "number" && e.torrent && e.torrent.files[idx]) {
         s.streamLen = e.torrent.files[idx].length;
     };
     return s;
