@@ -136,7 +136,7 @@ function createServer(port)
         if (request.method === 'OPTIONS' && request.headers.origin) {
             response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
             response.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-            response.setHeader('Access-Control-Allow-Headers', 'Range');
+            response.setHeader('Access-Control-Allow-Headers', request.headers['access-control-request-headers'] || 'Range');
             response.setHeader('Access-Control-Max-Age', '1728000');
 
             response.end();
@@ -146,7 +146,7 @@ function createServer(port)
         if(request.headers.origin) {
             response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
         }
-            
+
 		if (u.pathname === "/favicon.ico") return response.end();
         if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
         
@@ -168,6 +168,8 @@ function createServer(port)
             response.setHeader("Accept-Ranges", "bytes");
             response.setHeader("Content-Type", mime.lookup(handle.name));
             response.setHeader("Cache-Control", "max-age=0, no-cache");
+            response.setHeader("transferMode.dlna.org", "Streaming");
+            response.setHeader("contentFeatures.dlna.org", "DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=017000 00000000000000000000000000");
 
             // CORS? research in peerflix - https://github.com/mafintosh/peerflix/blob/master/index.js
             // https://github.com/mafintosh/peerflix/commit/1ff1540d8b200b43064db51a043f885f79e14868 
