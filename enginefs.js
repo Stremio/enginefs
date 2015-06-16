@@ -129,6 +129,24 @@ function createServer(port)
 	server.on("request", function(request, response) {
 		var u = url.parse(request.url);
 
+        // Allow CORS requests to specify byte ranges.
+        // The `Range` header is not a "simple header", thus the browser
+        // will first send OPTIONS request and check Access-Control-Allow-Headers
+        // before allowing additional requests.
+        if (request.method === 'OPTIONS' && request.headers.origin) {
+            response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
+            response.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+            response.setHeader('Access-Control-Allow-Headers', 'Range');
+            response.setHeader('Access-Control-Max-Age', '1728000');
+
+            response.end();
+            return;
+        }
+    
+        if(request.headers.origin) {
+            response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
+        }
+            
 		if (u.pathname === "/favicon.ico") return response.end();
         if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
         
@@ -150,7 +168,7 @@ function createServer(port)
             response.setHeader("Accept-Ranges", "bytes");
             response.setHeader("Content-Type", mime.lookup(handle.name));
             response.setHeader("Cache-Control", "max-age=0, no-cache");
-            
+
             // CORS? research in peerflix - https://github.com/mafintosh/peerflix/blob/master/index.js
             // https://github.com/mafintosh/peerflix/commit/1ff1540d8b200b43064db51a043f885f79e14868 
             // CORS for chromecast - https://github.com/mafintosh/peerflix/commit/9f22fb17ec7bc747f7b7dfa0e80951a638713220
