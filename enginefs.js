@@ -171,10 +171,6 @@ function createServer(port)
             response.setHeader("transferMode.dlna.org", "Streaming");
             response.setHeader("contentFeatures.dlna.org", "DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=017000 00000000000000000000000000");
 
-            // CORS? research in peerflix - https://github.com/mafintosh/peerflix/blob/master/index.js
-            // https://github.com/mafintosh/peerflix/commit/1ff1540d8b200b43064db51a043f885f79e14868 
-            // CORS for chromecast - https://github.com/mafintosh/peerflix/commit/9f22fb17ec7bc747f7b7dfa0e80951a638713220
-            // CORS byte ranges - https://github.com/mafintosh/peerflix/commit/4bf42ee93eabf679410797c54f65f49d36cf3410
             //response.setHeader("Access-Control-Max-Age", "1728000");
 
             if (!range) {
