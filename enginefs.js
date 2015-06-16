@@ -10,7 +10,6 @@ var rangeParser = require("range-parser");
 var mime = require("mime");
 var pump = require("pump");
 
-var request = require("request");
 var byline = require("byline");
 
 var _  = require("lodash");
