@@ -129,23 +129,7 @@ function createServer(port)
 	server.on("request", function(request, response) {
 		var u = url.parse(request.url);
 
-        // Allow CORS requests to specify byte ranges.
-        // The `Range` header is not a "simple header", thus the browser
-        // will first send OPTIONS request and check Access-Control-Allow-Headers
-        // before allowing additional requests.
-        if (request.method === 'OPTIONS' && request.headers.origin) {
-            response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
-            response.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-            response.setHeader('Access-Control-Allow-Headers', request.headers['access-control-request-headers'] || 'Range');
-            response.setHeader('Access-Control-Max-Age', '1728000');
-
-            response.end();
-            return;
-        }
-    
-        if(request.headers.origin) {
-            response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
-        }
+        if (sendCORSHeaders(request, response)) return;
 
 		if (u.pathname === "/favicon.ico") return response.end();
         if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
@@ -168,8 +152,8 @@ function createServer(port)
             response.setHeader("Accept-Ranges", "bytes");
             response.setHeader("Content-Type", mime.lookup(handle.name));
             response.setHeader("Cache-Control", "max-age=0, no-cache");
-            response.setHeader("transferMode.dlna.org", "Streaming");
-            response.setHeader("contentFeatures.dlna.org", "DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=017000 00000000000000000000000000");
+
+            if (sendDLNAHeaders(request, response)) return;
 
             //response.setHeader("Access-Control-Max-Age", "1728000");
 
@@ -192,7 +176,35 @@ function createServer(port)
 	if (port) server.listen(port);
 	return server;    
 };
- 
+
+function sendCORSHeaders(req, res)
+{
+    // Allow CORS requests to specify byte ranges.
+    // The `Range` header is not a "simple header", thus the browser
+    // will first send OPTIONS request and check Access-Control-Allow-Headers
+    // before allowing additional requests.
+
+    if (req.method === 'OPTIONS' && req.headers.origin) {
+        res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+        res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || 'Range');
+        res.setHeader('Access-Control-Max-Age', '1728000');
+
+        res.end();
+        return true;
+    }
+
+    if(req.headers.origin) {
+        res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+    }
+} 
+
+function sendDLNAHeaders(req, res)
+{
+    res.setHeader("transferMode.dlna.org", "Streaming");
+    res.setHeader("contentFeatures.dlna.org", "DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=017000 00000000000000000000000000");
+}
+
 /* Front-end: FUSE
  */
 // TODO
@@ -339,6 +351,9 @@ new Counter("stream-created", "stream-cached", function(hash, idx) { return hash
 module.exports = EngineFS;
 module.exports.http = createServer;
 // FUSE: TODO
+
+module.exports.sendCORSHeaders = sendCORSHeaders;
+module.exports.sendDLNAHeaders = sendDLNAHeaders;
 
 module.exports.create = createEngine;
 module.exports.get = getEngine;
