@@ -94,11 +94,12 @@ function installMiddleware(middleware)
     middlewares.push[middleware];
 }
 
-function tryMiddleware(path, cb)
+// TODO: in order to be abstract, replace req/res
+function tryMiddleware(path, req, res, cb)
 {
     async.each(middlewares, function(middleware, callback) { 
         if (typeof(middleware) != "function") return callback(); // consider warning here
-        middleware(path, callback);
+        middleware(path, req, res, callback);
     }, cb);
 }
 
@@ -148,9 +149,10 @@ function createServer(port)
         if (u.pathname === "/favicon.ico") return response.end();
         if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
 
-        tryMiddleware(function(u.pathname), function(stream) {
+        tryMiddleware(u.pathname, request, response, function(stream) {
             if (stream) {
-                stream.pipe(res);
+                if (sendDLNAHeaders(request, response)) return;
+                stream.pipe(response);
                 return;
             }
 
