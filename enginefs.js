@@ -88,7 +88,7 @@ function requestEngine(infoHash, cb)
     });
 }
 
-var middlwares = [];
+var middlewares = [];
 function installMiddleware(middleware) 
 {
     middlewares.push[middleware];
