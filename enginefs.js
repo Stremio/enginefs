@@ -150,9 +150,12 @@ function createServer(port)
         if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
 
         tryMiddleware(u.pathname, request, response, function(stream) {
-            if (stream) {
+            if (stream && stream.pipe) {
                 if (sendDLNAHeaders(request, response)) return;
                 stream.pipe(response);
+                return;
+            }
+            else if (stream) {
                 return;
             }
 
