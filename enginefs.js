@@ -88,6 +88,12 @@ function requestEngine(infoHash, cb)
     });
 }
 
+var middlwares = [];
+function installMiddleware(middleware) 
+{
+    middlewares.push[middleware];
+}
+
 function openPath(path, cb)
 {
     // length: 40 ; info hash
@@ -133,7 +139,7 @@ function createServer(port)
 
         if (u.pathname === "/favicon.ico") return response.end();
         if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
-        
+
         openPath(u.pathname, function(err, handle, e)
         {
             if (err) { console.error(err); response.statusCode = 500; return response.end(); }
@@ -360,3 +366,5 @@ module.exports.get = getEngine;
 module.exports.remove = removeEngine;
 module.exports.stats = statsEngine;
 module.exports.list = listEngines;
+
+module.exports.middleware = installMiddleware;
