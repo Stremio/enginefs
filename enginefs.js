@@ -58,24 +58,24 @@ function createEngine(infoHash, options, cb)
 
 function getEngine(infoHash) 
 {
-	return engines[infoHash.toLowerCase()];	
+    return engines[infoHash.toLowerCase()]; 
 }
 
 function removeEngine(infoHash)
 {
-	engines[infoHash].destroy();
-	delete engines[infoHash];
+    engines[infoHash].destroy();
+    delete engines[infoHash];
 }
 
 function statsEngine(infoHash, idx)
 {
-	if (!engines[infoHash]) return;
-	return getStatistics(engines[infoHash], idx);
+    if (!engines[infoHash]) return;
+    return getStatistics(engines[infoHash], idx);
 }
 
 function listEngines()
 {
-	return Object.keys(engines);
+    return Object.keys(engines);
 }
 
 function requestEngine(infoHash, cb) 
@@ -95,9 +95,9 @@ function openPath(path, cb)
     if (parts[0] && parts[0].length == 40)
     {
         var infoHash = parts[0];
-		var i = Number(parts[1]);
+        var i = Number(parts[1]);
 
-		if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index"));
+        if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index"));
         
         requestEngine(infoHash, function(err, engine)
         {
@@ -124,14 +124,14 @@ function openPath(path, cb)
  */
 function createServer(port)
 {
-	var server = http.createServer();
+    var server = http.createServer();
 
-	server.on("request", function(request, response) {
-		var u = url.parse(request.url);
+    server.on("request", function(request, response) {
+        var u = url.parse(request.url);
 
         if (sendCORSHeaders(request, response)) return;
 
-		if (u.pathname === "/favicon.ico") return response.end();
+        if (u.pathname === "/favicon.ico") return response.end();
         if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
         
         openPath(u.pathname, function(err, handle, e)
@@ -172,9 +172,9 @@ function createServer(port)
             pump(handle.createReadStream(range), response);  
         });
     });
-	
-	if (port) server.listen(port);
-	return server;    
+    
+    if (port) server.listen(port);
+    return server;    
 };
 
 function sendCORSHeaders(req, res)
