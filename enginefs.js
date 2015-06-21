@@ -94,6 +94,14 @@ function installMiddleware(middleware)
     middlewares.push[middleware];
 }
 
+function tryMiddleware(path, cb)
+{
+    async.each(middlewares, function(middleware, callback) { 
+        if (typeof(middleware) != "function") return callback(); // consider warning here
+        middleware(path, callback);
+    }, cb);
+}
+
 function openPath(path, cb)
 {
     // length: 40 ; info hash
@@ -140,42 +148,49 @@ function createServer(port)
         if (u.pathname === "/favicon.ico") return response.end();
         if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
 
-        openPath(u.pathname, function(err, handle, e)
-        {
-            if (err) { console.error(err); response.statusCode = 500; return response.end(); }
-            
-            // Handle LinvoFS events
-            EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle), e);
-            var emitClose = function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle), e) };
-            response.on("finish", emitClose);
-            response.on("close", emitClose);
-
-            request.connection.setTimeout(24*60*60*1000);
-            //request.connection.setTimeout(0);
-
-            var range = request.headers.range;
-            range = range && rangeParser(handle.length, range)[0];
-            response.setHeader("Accept-Ranges", "bytes");
-            response.setHeader("Content-Type", mime.lookup(handle.name));
-            response.setHeader("Cache-Control", "max-age=0, no-cache");
-
-            if (sendDLNAHeaders(request, response)) return;
-
-            //response.setHeader("Access-Control-Max-Age", "1728000");
-
-            if (!range) {
-                response.setHeader("Content-Length", handle.length);
-                if (request.method === "HEAD") return response.end();
-                pump(handle.createReadStream(), response);
+        tryMiddleware(function(u.pathname), function(stream) {
+            if (stream) {
+                stream.pipe(res);
                 return;
             }
 
-            response.statusCode = 206;
-            response.setHeader("Content-Length", range.end - range.start + 1);
-            response.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
+            openPath(u.pathname, function(err, handle, e)
+            {
+                if (err) { console.error(err); response.statusCode = 500; return response.end(); }
+                
+                // Handle LinvoFS events
+                EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle), e);
+                var emitClose = function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle), e) };
+                response.on("finish", emitClose);
+                response.on("close", emitClose);
 
-            if (request.method === "HEAD") return response.end();
-            pump(handle.createReadStream(range), response);  
+                request.connection.setTimeout(24*60*60*1000);
+                //request.connection.setTimeout(0);
+
+                var range = request.headers.range;
+                range = range && rangeParser(handle.length, range)[0];
+                response.setHeader("Accept-Ranges", "bytes");
+                response.setHeader("Content-Type", mime.lookup(handle.name));
+                response.setHeader("Cache-Control", "max-age=0, no-cache");
+
+                if (sendDLNAHeaders(request, response)) return;
+
+                //response.setHeader("Access-Control-Max-Age", "1728000");
+
+                if (!range) {
+                    response.setHeader("Content-Length", handle.length);
+                    if (request.method === "HEAD") return response.end();
+                    pump(handle.createReadStream(), response);
+                    return;
+                }
+
+                response.statusCode = 206;
+                response.setHeader("Content-Length", range.end - range.start + 1);
+                response.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
+
+                if (request.method === "HEAD") return response.end();
+                pump(handle.createReadStream(range), response);  
+            });
         });
     });
     
