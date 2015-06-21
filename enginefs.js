@@ -91,7 +91,7 @@ function requestEngine(infoHash, cb)
 var middlewares = [];
 function installMiddleware(middleware) 
 {
-    middlewares.push[middleware];
+    middlewares.push(middleware);
 }
 
 // TODO: in order to be abstract, replace req/res
