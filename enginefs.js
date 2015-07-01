@@ -13,6 +13,7 @@ var pump = require("pump");
 var byline = require("byline");
 
 var _  = require("lodash");
+var async = require("async");
 
 var EngineFS =  new events.EventEmitter();
 
