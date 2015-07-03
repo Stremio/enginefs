@@ -7,6 +7,7 @@ var os = require("os");
 var events = require("events");
 
 var rangeParser = require("range-parser");
+var bodyParser = require("body-parser");
 var mime = require("mime");
 var pump = require("pump");
 
@@ -141,8 +142,9 @@ function openPath(path, cb)
 function createServer(port)
 {
     var server = http.createServer();
+    var parser = bodyParser.json({ type: "application/*+json" });
 
-    server.on("request", function(request, response) {
+    function onRequest(request, response) {
         var u = url.parse(request.url);
 
         if (sendCORSHeaders(request, response)) return;
@@ -198,6 +200,9 @@ function createServer(port)
                 pump(handle.createReadStream(range), response);  
             });
         });
+    };
+    server.on("request", function(req, res) {
+        parser(req, res, function() { onRequest(req, res) });
     });
     
     if (port) server.listen(port);
