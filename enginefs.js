@@ -142,7 +142,7 @@ function openPath(path, cb)
 function createServer(port)
 {
     var server = http.createServer();
-    var parser = bodyParser.json({ type: "application/*+json" });
+    var parser = bodyParser.json();
 
     function onRequest(request, response) {
         var u = url.parse(request.url);
