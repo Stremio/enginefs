@@ -252,7 +252,9 @@ function getStatistics(e, idx)
 
         downloadSpeed: e.swarm.downloadSpeed(),
         uploadSpeed: e.swarm.downloadSpeed(),
-
+        
+        sources: e.swarm.peerSearch && e.swarm.peerSearch.stats(),
+        
         dht: !!e.dht,
         dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
         dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
