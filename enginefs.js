@@ -98,7 +98,7 @@ function installMiddleware(middleware)
 // TODO: in order to be abstract, replace req/res
 function tryMiddleware(path, req, res, cb)
 {
-    async.each(middlewares, function(middleware, callback) { 
+    async.eachSeries(middlewares, function(middleware, callback) { 
         if (typeof(middleware) != "function") return callback(); // consider warning here
         middleware(path, req, res, callback);
     }, cb);
