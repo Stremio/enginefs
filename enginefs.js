@@ -74,7 +74,7 @@ function settingsEngine(infoHash, settings)
    var e = engines[infoHash];
    if (!e) return;
    if (settings.hasOwnProperty("writeQueue")) {
-        if (settings.writeQueue == "PAUSE") handle.engine.ready(function() { e.store.writequeue.pause() });
+        if (settings.writeQueue == "PAUSE") e.ready(function() { e.store.writequeue.pause() });
         else if (e.store.writequeue) e.store.writequeue.resume(); // no need for ready, since it's by default resumed
         // TODO: resume it after some max time after it's been paused
    }
