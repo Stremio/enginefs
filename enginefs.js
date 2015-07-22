@@ -53,7 +53,6 @@ function createEngine(infoHash, options, cb)
     var isNew = !engines[infoHash];
     var e = engines[infoHash] = engines[infoHash] || module.exports.engine(torrent, options);
     e.swarm.resume(); // In case it's paused
-    e.ready(function() { cb(null, e) });
 
     if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
     if (isNew && options.swarmCap) e.on("download", function() {
@@ -64,6 +63,7 @@ function createEngine(infoHash, options, cb)
     
     EngineFS.emit("engine-created", infoHash);
     EngineFS.emit("engine-created:"+infoHash); 
+    e.ready(function() { EngineFS.emit("engine-ready", infoHash); EngineFS.emit("engine-ready:"+infoHash) })
 }
 
 function getEngine(infoHash) 
