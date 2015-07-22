@@ -62,7 +62,7 @@ function createEngine(infoHash, options, cb)
     });
     
     Emit(["engine-created", infoHash]);
-    e.ready(function() { Emit(["engine-ready", infoHash]) })
+    e.ready(function() { enginefs.emit("engine-ready:"+infoHash, e.torrent); enginefs.emit("engine-ready", infoHash, e.torrent); })
 }
 
 function getEngine(infoHash) 
