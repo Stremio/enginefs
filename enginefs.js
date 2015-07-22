@@ -299,7 +299,7 @@ function getStatistics(e, idx)
 * stream-cached:fileID filePath
 * stream-progress:fileID filePath percent 
 */
-EngineFS.on("stream-open", function(infoHash, fileIndex);
+EngineFS.on("stream-open", function(infoHash, fileIndex)
 {
     var e = getEngine(infoHash);
     var file = e.torrent.files[fileIndex];
