@@ -11,6 +11,8 @@ var bodyParser = require("body-parser");
 var mime = require("mime");
 var pump = require("pump");
 
+var PeerSearch = require("peer-search");
+
 var byline = require("byline");
 
 var _  = require("lodash");
@@ -48,19 +50,25 @@ function createEngine(infoHash, options, cb)
 
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
+    var isNew = !engines[infoHash];
     var e = engines[infoHash] = engines[infoHash] || module.exports.engine(torrent, options);
     e.swarm.resume(); // In case it's paused
     e.ready(function() { cb(null, e) });
+
+    if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
     
-    EngineFS.emit("engine-created", e);
-    EngineFS.emit("engine-created:"+infoHash, e);
- 
-    return e;
+    EngineFS.emit("engine-created", infoHash);
+    EngineFS.emit("engine-created:"+infoHash); 
 }
 
 function getEngine(infoHash) 
 {
     return engines[infoHash.toLowerCase()]; 
+}
+
+function existsEngine(infoHash)
+{
+
 }
 
 function removeEngine(infoHash)
@@ -74,7 +82,10 @@ function settingsEngine(infoHash, settings)
    var e = engines[infoHash];
    if (!e) return;
    if (settings.hasOwnProperty("writeQueue")) {
-        if (settings.writeQueue == "PAUSE") e.ready(function() { e.store.writequeue.pause() });
+        if (settings.writeQueue == "PAUSE") e.ready(function() { 
+            e.store.writequeue.pause(); 
+            setTimeout(function() { e.store.writequeue.resume() }, 50*1000); // Done for safety reasons
+        });
         else if (e.store.writequeue) e.store.writequeue.resume(); // no need for ready, since it's by default resumed
         // TODO: resume it after some max time after it's been paused
    }
@@ -288,12 +299,13 @@ function getStatistics(e, idx)
 * stream-cached:fileID filePath
 * stream-progress:fileID filePath percent 
 */
-EngineFS.on("stream-open", function(infoHash, fileIndex, e)
+EngineFS.on("stream-open", function(infoHash, fileIndex);
 {
+    var e = getEngine(infoHash);
     var file = e.torrent.files[fileIndex];
     if (file.__cacheEvents) return;
     file.__cacheEvents = true;
-    EngineFS.emit("stream-created", infoHash, fileIndex, e);
+    EngineFS.emit("stream-created", infoHash, fileIndex);
 
     var startPiece = (file.offset / e.torrent.pieceLength) | 0;
     var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
@@ -401,7 +413,8 @@ module.exports.sendCORSHeaders = sendCORSHeaders;
 module.exports.sendDLNAHeaders = sendDLNAHeaders;
 
 module.exports.create = createEngine;
-module.exports.get = getEngine;
+module.exports.get = getEngine; // TEMP TODO REMOVE
+module.exports.exists = existsEngine;
 module.exports.remove = removeEngine;
 module.exports.settings = settingsEngine;
 module.exports.stats = statsEngine;
