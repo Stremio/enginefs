@@ -312,9 +312,8 @@ function getStatistics(e, idx)
 * stream-cached:fileID filePath
 * stream-progress:fileID filePath percent 
 */
-EngineFS.on("stream-open", function(infoHash, fileIndex)
+EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(infoHash); e.ready(function() 
 {
-    var e = getEngine(infoHash);
     var file = e.torrent.files[fileIndex];
     if (file.__cacheEvents) return;
     file.__cacheEvents = true;
@@ -360,7 +359,7 @@ EngineFS.on("stream-open", function(infoHash, fileIndex)
     var endPiece = ((file.offset+file.length-1) / e.torrent.realPieceLength) | 0;
     var ratio = e.torrent.realPieceLength / e.torrent.pieceLength;
     e.select(startPiece*ratio, (endPiece+1)*ratio, false);
-});
+} });
 
 
 /*  
