@@ -359,7 +359,7 @@ EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(inf
     var endPiece = ((file.offset+file.length-1) / e.torrent.realPieceLength) | 0;
     var ratio = e.torrent.realPieceLength / e.torrent.pieceLength;
     e.select(startPiece*ratio, (endPiece+1)*ratio, false);
-} });
+}) });
 
 
 /*  
