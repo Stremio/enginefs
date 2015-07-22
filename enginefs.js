@@ -94,6 +94,8 @@ function settingsEngine(infoHash, settings)
         else if (e.store.writequeue) e.store.writequeue.resume(); // no need for ready, since it's by default resumed
         // TODO: resume it after some max time after it's been paused
    }
+   if (settings.swarm == "PAUSE") e.swarm.pause();
+   if (settings.swarm == "RESUME") e.swarm.resume();
 }
 
 function statsEngine(infoHash, idx)
