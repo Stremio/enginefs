@@ -61,9 +61,8 @@ function createEngine(infoHash, options, cb)
         else e.swarm.resume();
     });
     
-    EngineFS.emit("engine-created", infoHash);
-    EngineFS.emit("engine-created:"+infoHash); 
-    e.ready(function() { EngineFS.emit("engine-ready", infoHash); EngineFS.emit("engine-ready:"+infoHash) })
+    Emit(["engine-created", infoHash]);
+    e.ready(function() { Emit(["engine-ready", infoHash]) })
 }
 
 function getEngine(infoHash) 
@@ -196,8 +195,8 @@ function createServer(port)
                 if (err) { console.error(err); response.statusCode = 500; return response.end(); }
                 
                 // Handle LinvoFS events
-                EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle), e);
-                var emitClose = function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle), e) };
+                EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle));
+                var emitClose = function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle)) };
                 response.on("finish", emitClose);
                 response.on("close", emitClose);
 
