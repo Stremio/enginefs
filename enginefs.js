@@ -420,7 +420,7 @@ module.exports.sendCORSHeaders = sendCORSHeaders;
 module.exports.sendDLNAHeaders = sendDLNAHeaders;
 
 module.exports.create = createEngine;
-module.exports.get = getEngine; // TEMP TODO REMOVE
+//module.exports.get = getEngine;
 module.exports.exists = existsEngine;
 module.exports.remove = removeEngine;
 module.exports.settings = settingsEngine;
