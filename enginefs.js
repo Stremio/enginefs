@@ -68,7 +68,7 @@ function getEngine(infoHash)
 
 function existsEngine(infoHash)
 {
-
+    return !!engines[infoHash.toLowerCase()]; 
 }
 
 function removeEngine(infoHash)
