@@ -133,6 +133,13 @@ function tryMiddleware(path, req, res, cb)
     }, cb);
 }
 
+// Emulate opening a stream
+function prewarmStream(hash, idx)
+{
+    EngineFS.emit("stream-open", hash, idx);
+    engines[hash].files[idx].select(); // select without priority so we start downloading
+};
+
 function openPath(path, cb)
 {
     // length: 40 ; info hash
@@ -425,5 +432,7 @@ module.exports.remove = removeEngine;
 module.exports.settings = settingsEngine;
 module.exports.stats = statsEngine;
 module.exports.list = listEngines;
+
+module.exports.prewarmStream = prewarmStream;
 
 module.exports.middleware = installMiddleware;
