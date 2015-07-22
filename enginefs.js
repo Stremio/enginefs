@@ -137,7 +137,7 @@ function tryMiddleware(path, req, res, cb)
 function prewarmStream(hash, idx)
 {
     //EngineFS.emit("stream-open", hash, idx);
-    if (engines[hash]) engines[hash].files[idx].select(); // select without priority so we start downloading
+    if (engines[hash]) engines[hash].ready(function() { engines[hash].files[idx].select() }); // select without priority so we start downloading
 };
 
 function openPath(path, cb)
