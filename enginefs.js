@@ -89,7 +89,7 @@ function settingsEngine(infoHash, settings)
         if (settings.writeQueue == "PAUSE") { 
             e.store.writequeue.pause(); 
             setTimeout(function() { e.store.writequeue.resume() }, 50*1000); // Done for safety reasons
-        };
+        }
         else e.store.writequeue.resume(); // no need for ready, since it's by default resumed
    });
    
