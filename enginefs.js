@@ -56,6 +56,11 @@ function createEngine(infoHash, options, cb)
     e.ready(function() { cb(null, e) });
 
     if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
+    if (isNew && options.swarmCap) e.on("download", function() {
+        var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
+        if (e.swarm.downloadSpeed() > options.swarmCap.maxSpeed && unchoked > options.swarmCap.minPeers) e.swarm.pause();
+        else e.swarm.resume();
+    });
     
     EngineFS.emit("engine-created", infoHash);
     EngineFS.emit("engine-created:"+infoHash); 
