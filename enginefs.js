@@ -60,6 +60,7 @@ function createEngine(infoHash, options, cb)
         if (e.swarm.downloadSpeed() > options.swarmCap.maxSpeed && unchoked > options.swarmCap.minPeers) e.swarm.pause();
         else e.swarm.resume();
     });
+    if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
     
     if (isNew) Emit(["engine-created", infoHash]);
     e.ready(function() { EngineFS.emit("engine-ready:"+infoHash, e.torrent); EngineFS.emit("engine-ready", infoHash, e.torrent); })
