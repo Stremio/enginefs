@@ -284,7 +284,8 @@ function getStatistics(e, idx)
         unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
         queued: e.swarm.queued,
         unique: Object.keys(e.swarm._peers).length,
-
+        connectionTries: e.swarm.tries,
+        
         files: e.torrent && e.torrent.files,
 
         downloaded: e.swarm.downloaded,
