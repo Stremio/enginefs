@@ -47,6 +47,8 @@ function createEngine(infoHash, options, cb)
     if (! module.exports.engine) throw new Error("EngineFS requires EngineFS.engine to point to engine constructor");
 
     var cb = cb || function() { };
+    
+   //if (!options)//TODO
 
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
