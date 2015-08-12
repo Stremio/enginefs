@@ -63,6 +63,8 @@ function createEngine(infoHash, options, cb)
         else e.swarm.resume();
     });
     
+    if (isNew) e.on("error", console.error.bind(console)); // for now that
+    
     if (isNew) Emit(["engine-created", infoHash]);
     e.ready(function() { EngineFS.emit("engine-ready:"+infoHash, e.torrent); EngineFS.emit("engine-ready", infoHash, e.torrent); })
 }
