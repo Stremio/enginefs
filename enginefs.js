@@ -103,7 +103,7 @@ function settingsEngine(infoHash, settings)
 
 function statsEngine(infoHash, idx)
 {
-    if (!engines[infoHash]) return;
+    if (!engines[infoHash]) return null;
     return getStatistics(engines[infoHash], idx);
 }
 
