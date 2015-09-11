@@ -315,7 +315,7 @@ function getStatistics(e, idx)
 
 /*
 * Emit events
-* stream-cached:fileID filePath
+* stream-cached:fileID filePath file
 * stream-progress:fileID filePath percent 
 */
 EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(infoHash); e.ready(function() 
@@ -323,7 +323,7 @@ EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(inf
     var file = e.torrent.files[fileIndex];
     if (file.__cacheEvents) return;
     file.__cacheEvents = true;
-    EngineFS.emit("stream-created", infoHash, fileIndex);
+    EngineFS.emit("stream-created", infoHash, fileIndex, file);
 
     var startPiece = (file.offset / e.torrent.pieceLength) | 0;
     var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
@@ -344,8 +344,8 @@ EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(inf
         if (fpieces.length) return;
 
         var fpath = e.store.getDest(fileIndex);
-        EngineFS.emit("stream-cached:"+infoHash+":"+fileIndex, fpath);
-        EngineFS.emit("stream-cached", infoHash, fileIndex, fpath);
+        EngineFS.emit("stream-cached:"+infoHash+":"+fileIndex, fpath, file);
+        EngineFS.emit("stream-cached", infoHash, fileIndex, fpath, file);
 
         e.removeListener("download", onDownload);
         e.removeListener("verify", onDownload);
