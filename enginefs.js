@@ -62,6 +62,7 @@ function createEngine(infoHash, options, cb)
         if (e.swarm.downloadSpeed() > options.swarmCap.maxSpeed && unchoked > options.swarmCap.minPeers) e.swarm.pause();
         else e.swarm.resume();
     });
+    if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
     
     if (isNew) e.on("error", console.error.bind(console)); // for now that
     
