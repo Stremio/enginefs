@@ -152,7 +152,7 @@ function openPath(path, cb)
     var parts = path.split("/").filter(function(x) { return x });
     if (parts[0] && parts[0].length == 40)
     {
-        var infoHash = parts[0];
+        var infoHash = parts[0].toLowerCase();
         var i = Number(parts[1]);
 
         if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index"));
