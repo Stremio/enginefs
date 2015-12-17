@@ -1,5 +1,7 @@
 # enginefs
-Simple layer to use and manage torrent-stream engines and access them through HTTP / FUSE. Somewhat similar to peerflix-server, but allows more sophisticated management, such as automatically closing torrent-stream's after some time of inactivity, etc.
+Simple layer to use and manage torrent-stream engines and access them through HTTP / FUSE. 
+
+Somewhat similar to peerflix-server, but allows more sophisticated management, such as automatically closing torrent-stream's after some time of inactivity, etc.
 
 Wishlist:
 * HLS support - allow live transcoding to HLS
