@@ -9,10 +9,7 @@ Wishlist:
 
 # Example:
 ```javascript
-var enginefs = require("enginefs"),
-    http = require("http"),
-    url = require("url"),
-    os = require("os");
+var enginefs = require("enginefs");
 
 // Set engine - standard torrent-stream would do the trick
 enginefs.engine = require("torrent-stream");
@@ -22,10 +19,8 @@ enginefs.STREAM_TIMEOUT = 20*1000;
 enginefs.ENGINE_TIMEOUT = 2*60*1000;
 
 // Init the server, try different ports
-var server = enginefs._server = enginefs.http(), port = 10000;
-server.listen(port); // use .listen(port, address) for using a custom bind address; also change the following line
-server.on("error", function(err) { if (port++ < 10004) server.listen(port); else console.error(err) });
-http.globalAgent.maxSockets = 40;
+var server = enginefs.http();
+server.listen(10000);
 
 server.on("listening", function() {
     enginefs.baseUrlLocal = "http://localhost:" + server.address().port;
@@ -35,7 +30,7 @@ server.on("listening", function() {
 
 // You can use middlewares
 enginefs.middleware(function(path, req, res, next) {
-    console.log("-> "+url.parse(req.url).path); // Logging purposes
+    console.log("-> "+req.url); // Logging purposes
     next();
 });
 
