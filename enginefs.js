@@ -185,7 +185,7 @@ function createServer(port)
     var parser = bodyParser.json();
 
     function onRequest(request, response) {
-        var u = url.parse(request.url);
+        var u = url.parse(request.url, true);
 
         if (sendCORSHeaders(request, response)) return;
 
@@ -220,6 +220,7 @@ function createServer(port)
                 response.setHeader("Accept-Ranges", "bytes");
                 response.setHeader("Content-Type", mime.lookup(handle.name));
                 response.setHeader("Cache-Control", "max-age=0, no-cache");
+                if (u.query.subtitles) response.setHeader("CaptionInfo.sec", u.query.subtitles);
 
                 if (sendDLNAHeaders(request, response)) return;
 
