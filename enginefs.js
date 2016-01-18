@@ -62,6 +62,10 @@ function createEngine(infoHash, options, cb)
         else e.swarm.resume();
     });
     if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
+    if (isNew && options.storageMemoryCache) e.on("download", function() {
+     options.growler = options.growler || { flood: 0, pulse: 2*1024*1024 };
+     e.setFloodedPulse(options.growler.flood, options.growler.pulse * (1-(e.store.memoryBufSize() / options.storageMemoryCache)));
+    });
     
     if (isNew) e.on("error", console.error.bind(console)); // for now that
     if (isNew) e.on("error", function(err) { EngineFS.emit("engine-error:"+infoHash, err); EngineFS.emit("engine-error", infoHash, err); });
