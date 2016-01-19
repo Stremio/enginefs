@@ -213,7 +213,7 @@ function createServer(port)
                 
                 // Handle LinvoFS events
                 EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle));
-                var emitClose = function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle)) };
+                var emitClose = _.once(function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle)) });
                 response.on("finish", emitClose);
                 response.on("close", emitClose);
 
