@@ -368,9 +368,10 @@ EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(inf
      * 
      * Plus, we always guarantee we have the whole file requested
      */
-    var startPiece = (file.offset / e.torrent.realPieceLength) | 0;
-    var endPiece = ((file.offset+file.length-1) / e.torrent.realPieceLength) | 0;
-    var ratio = e.torrent.realPieceLength / e.torrent.pieceLength;
+    var vLen = e.torrent.realPieceLength || e.torrent.verificationLen;
+    var startPiece = (file.offset / vLen) | 0;
+    var endPiece = ((file.offset+file.length-1) / vLen) | 0;
+    var ratio = vLen / e.torrent.pieceLength;
     e.select(startPiece*ratio, (endPiece+1)*ratio, false);
 }) });
 
