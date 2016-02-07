@@ -8,14 +8,15 @@
     "type": "git",
     "url": "https://github.com/Ivshti/enginefs.git"
   },
-  "dependencies" : {
-    "mime": "^1.2.11",
-    "pump": "^0.3.1",
-    "range-parser": "^1.0.0",
+  "dependencies": {
+    "async": "1.x.x",
     "body-parser": "1.13.x",
     "byline": "3.1.2",
     "lodash": "3.3.x",
+    "mime": "^1.2.11",
     "peer-search": "Ivshti/peer-search",
-    "async": "1.x.x"
+    "pump": "^0.3.1",
+    "range-parser": "^1.0.0",
+    "router": "^1.1.4"
   }
 }
