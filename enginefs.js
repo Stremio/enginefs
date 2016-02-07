@@ -19,9 +19,7 @@ var async = require("async");
 
 var EngineFS =  new events.EventEmitter();
 
-
-// engine
-
+// Events:
 // stream-open
 // stream-close
 // stream-inactive stream-inactive:hash:idx
@@ -197,6 +195,7 @@ function createServer(port)
     app.use(sendCORSHeaders);
     app.use(sendDLNAHeaders);
     app.use(router);
+    app.use(function(req, res, next) { tryMiddleware(req._parsedUrl.pathname, req, res, function(s) { s!==true && next() }) }); // COMPAT
 
     app.use(function(req, res, next) {
         var u = url.parse(req.url, true);
