@@ -8,6 +8,8 @@ var events = require("events");
 
 var rangeParser = require("range-parser");
 var bodyParser = require("body-parser");
+var Router = require("router");
+
 var mime = require("mime");
 var pump = require("pump");
 
@@ -128,8 +130,8 @@ function requestEngine(infoHash, cb)
     });
 }
 
-var middlewares = [];
-function installMiddleware(middleware) 
+var middlewares = [], router = Router();
+function installMiddleware(name, fn) 
 {
     middlewares.push(middleware);
 }
@@ -449,3 +451,4 @@ module.exports.list = listEngines;
 module.exports.prewarmStream = prewarmStream;
 
 module.exports.middleware = installMiddleware;
+module.exports.router = router;
