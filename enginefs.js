@@ -1,11 +1,10 @@
 /* TODO: split that file into parts
  */
-var http = require("http");
-var fs = require("fs");
 var url = require("url");
 var os = require("os");
 var events = require("events");
 
+var connect = require("connect");
 var rangeParser = require("range-parser");
 var bodyParser = require("body-parser");
 var Router = require("router");
@@ -15,9 +14,7 @@ var pump = require("pump");
 
 var PeerSearch = require("peer-search");
 
-var byline = require("byline");
-
-var _  = require("lodash");
+var _  = require("lodash"); // TODO: used only for _.map and _.once; eliminate that
 var async = require("async");
 
 var EngineFS =  new events.EventEmitter();
@@ -125,13 +122,12 @@ function requestEngine(infoHash, cb)
     if (engines[infoHash]) return engines[infoHash].ready(function() { cb(null, engines[infoHash]) });
 
     EngineFS.emit("request", infoHash);
-    EngineFS.once("engine-created:"+infoHash, function() {
-        if (engines[infoHash]) engines[infoHash].ready(function(){ cb(null, engines[infoHash]) });
-    });
+    EngineFS.once("engine-ready:"+infoHash, function() { cb(null, engines[infoHash]) });
 }
 
-var middlewares = [], router = Router();
-function installMiddleware(name, fn) 
+var router = Router();
+var middlewares = [];
+function installMiddleware(middleware) 
 {
     middlewares.push(middleware);
 }
@@ -184,80 +180,70 @@ function openPath(path, cb)
     cb(new Error("Cannot parse path"));
 }
 
+/* Boilerplate routes
+ */
+router.get("/favicon.ico", function(req, res) { res.writeHead(404); res.end() });
+router.get("/stats.json", function(req, res) { res.end(JSON.stringify(_.map(engines, getStatistics))) });
+
 /* Front-end: HTTP
  */
 function createServer(port)
 {
-    var server = http.createServer();
-    var parser = bodyParser.json();
+    var http = require("http");
+    var app = connect();
 
-    function onRequest(request, response) {
-        var u = url.parse(request.url, true);
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: true }));
+    app.use(sendCORSHeaders);
+    app.use(sendDLNAHeaders);
+    app.use(router);
 
-        if (sendCORSHeaders(request, response)) return;
+    app.use(function(req, res, next) {
+        var u = url.parse(req.url, true);
+        openPath(u.pathname, function(err, handle, e)
+        {
+            if (err) { console.error(err); res.statusCode = 500; return res.end(); }
+            
+            // Handle LinvoFS events
+            EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle));
+            var emitClose = _.once(function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle)) });
+            res.on("finish", emitClose);
+            res.on("close", emitClose);
 
-        if (u.pathname === "/favicon.ico") return response.end();
-        if (u.pathname === "/stats.json") return response.end(JSON.stringify(_.map(engines, getStatistics)));
+            req.connection.setTimeout(24*60*60*1000);
+            //req.connection.setTimeout(0);
 
-        tryMiddleware(u.pathname, request, response, function(stream) {
-            if (stream && stream.pipe) {
-                if (sendDLNAHeaders(request, response)) return;
-                stream.pipe(response);
+            var range = req.headers.range;
+            range = range && rangeParser(handle.length, range)[0];
+            res.setHeader("Accept-Ranges", "bytes");
+            res.setHeader("Content-Type", mime.lookup(handle.name));
+            res.setHeader("Cache-Control", "max-age=0, no-cache");
+            if (u.query.subtitles) res.setHeader("CaptionInfo.sec", u.query.subtitles);
+
+            //res.setHeader("Access-Control-Max-Age", "1728000");
+
+            if (!range) {
+                res.setHeader("Content-Length", handle.length);
+                if (req.method === "HEAD") return res.end();
+                pump(handle.createReadStream(), res);
                 return;
             }
-            else if (stream) {
-                return;
-            }
 
-            openPath(u.pathname, function(err, handle, e)
-            {
-                if (err) { console.error(err); response.statusCode = 500; return response.end(); }
-                
-                // Handle LinvoFS events
-                EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle));
-                var emitClose = _.once(function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle)) });
-                response.on("finish", emitClose);
-                response.on("close", emitClose);
+            res.statusCode = 206;
+            res.setHeader("Content-Length", range.end - range.start + 1);
+            res.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
 
-                request.connection.setTimeout(24*60*60*1000);
-                //request.connection.setTimeout(0);
-
-                var range = request.headers.range;
-                range = range && rangeParser(handle.length, range)[0];
-                response.setHeader("Accept-Ranges", "bytes");
-                response.setHeader("Content-Type", mime.lookup(handle.name));
-                response.setHeader("Cache-Control", "max-age=0, no-cache");
-                if (u.query.subtitles) response.setHeader("CaptionInfo.sec", u.query.subtitles);
-
-                if (sendDLNAHeaders(request, response)) return;
-
-                //response.setHeader("Access-Control-Max-Age", "1728000");
-
-                if (!range) {
-                    response.setHeader("Content-Length", handle.length);
-                    if (request.method === "HEAD") return response.end();
-                    pump(handle.createReadStream(), response);
-                    return;
-                }
-
-                response.statusCode = 206;
-                response.setHeader("Content-Length", range.end - range.start + 1);
-                response.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
-
-                if (request.method === "HEAD") return response.end();
-                pump(handle.createReadStream(range), response);  
-            });
+            if (req.method === "HEAD") return res.end();
+            pump(handle.createReadStream(range), res);  
         });
-    };
-    server.on("request", function(req, res) {
-        parser(req, res, function() { onRequest(req, res) });
     });
-    
+
+    var server = http.createServer(app);
     if (port) server.listen(port);
-    return server;    
+    return server;
 };
 
-function sendCORSHeaders(req, res)
+function sendCORSHeaders(req, res, next)
 {
     // Allow CORS requests to specify byte ranges.
     // The `Range` header is not a "simple header", thus the browser
@@ -277,12 +263,16 @@ function sendCORSHeaders(req, res)
     if(req.headers.origin) {
         res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
     }
+
+    if (next) next();
 } 
 
-function sendDLNAHeaders(req, res)
+function sendDLNAHeaders(req, res, next)
 {
     res.setHeader("transferMode.dlna.org", "Streaming");
     res.setHeader("contentFeatures.dlna.org", "DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=017000 00000000000000000000000000");
+   
+    if (next) next();
 }
 
 /* Front-end: FUSE
