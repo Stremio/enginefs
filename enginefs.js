@@ -296,7 +296,8 @@ function getStatistics(e, idx)
         queued: e.swarm.queued,
         unique: Object.keys(e.swarm._peers).length,
         connectionTries: e.swarm.tries,
-        
+        paused: e.swarm.paused,
+
         files: e.torrent && e.torrent.files,
 
         downloaded: e.swarm.downloaded,
