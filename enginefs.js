@@ -53,11 +53,16 @@ function createEngine(infoHash, options, cb)
     e.swarm.resume(); // In case it's paused
 
     if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
-    if (isNew && options.swarmCap) e.on("download", function() {
-        var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
-        if (e.swarm.downloadSpeed() > options.swarmCap.maxSpeed && unchoked > options.swarmCap.minPeers) e.swarm.pause();
-        else e.swarm.resume();
-    });
+    if (isNew && options.swarmCap) {
+     var updateSwarmCap = function() {
+         var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
+         if (e.swarm.downloadSpeed() > options.swarmCap.maxSpeed && unchoked > options.swarmCap.minPeers) e.swarm.pause();
+         else e.swarm.resume();
+     };
+     e.swarm.on("wire", updateSwarmCap);
+     e.swarm.on("wire-disconnect", updateSwarmCap);
+     e.on("download", updateSwarmCap);
+    }
     if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
     if (isNew && options.throttleSpeedForMemCache && options.storageMemoryCache) e.on("update", function() {
         if (!e.store.memoryBufSize) return;
