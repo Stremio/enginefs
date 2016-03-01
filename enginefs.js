@@ -299,7 +299,13 @@ function getStatistics(e, idx)
         swarmPaused: e.swarm.paused,
 
         selections: e.selection.length,
-        wires: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).map(function(wire) { return { requests: wire.requests.length, address: wire.peerAddress } }),
+        wires: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).map(function(wire) { 
+           return { 
+              requests: wire.requests.length, address: wire.peerAddress,
+              amInterested: wire.amInterested, isSeeder: wire.isSeeder,
+              downSpeed:  wire.downloadSpeed(), upSpeed: wire.uploadSpeed()
+           } 
+        }),
 
         files: e.torrent && e.torrent.files,
 
