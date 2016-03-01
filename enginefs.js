@@ -187,6 +187,7 @@ function openPath(path, cb)
  */
 router.get("/favicon.ico", function(req, res) { res.writeHead(404); res.end() });
 router.get("/stats.json", function(req, res) { res.end(JSON.stringify(_.map(engines, getStatistics))) });
+router.get("/:infoHash/stats.json", function(req, res) { res.end(JSON.stringify(getStatistics(engines[req.params.infoHash]))) });
 
 /* Front-end: HTTP
  */
@@ -286,6 +287,7 @@ function sendDLNAHeaders(req, res, next)
 
 function getStatistics(e, idx)
 {
+    if (!e) return null;
     var s = {
         peers: e.swarm.wires.length,
         unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
