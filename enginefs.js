@@ -360,7 +360,7 @@ EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(inf
 
         if (fpieces.length) return;
 
-        var fpath = e.store.getDest(fileIndex);
+        var fpath = e.store.getDest && e.store.getDest(fileIndex); // getDest not supported in all torrent-stream versions
         EngineFS.emit("stream-cached:"+infoHash+":"+fileIndex, fpath, file);
         EngineFS.emit("stream-cached", infoHash, fileIndex, fpath, file);
 
