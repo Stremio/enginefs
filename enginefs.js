@@ -290,6 +290,8 @@ function getStatistics(e, idx)
 {
     if (!e) return null;
     var s = {
+        infoHash: e.infoHash,
+
         peers: e.swarm.wires.length,
         unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
         queued: e.swarm.queued,
