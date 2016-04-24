@@ -188,6 +188,7 @@ function openPath(path, cb)
 router.get("/favicon.ico", function(req, res) { res.writeHead(404); res.end() });
 router.get("/stats.json", function(req, res) { res.end(JSON.stringify(_.map(engines, getStatistics))) });
 router.get("/:infoHash/stats.json", function(req, res) { res.end(JSON.stringify(getStatistics(engines[req.params.infoHash]))) });
+router.get("/:infoHash/:idx/stats.json", function(req, res) { res.end(JSON.stringify(getStatistics(engines[req.params.infoHash], req.params.idx))) });
 
 /* Front-end: HTTP
  */
