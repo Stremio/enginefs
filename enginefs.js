@@ -302,7 +302,7 @@ function getStatistics(e, idx)
         swarmPaused: e.swarm.paused,
 
         selections: e.selection.length,
-        wires: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).map(function(wire) { 
+        wires: idx===undefined ? null : e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).map(function(wire) { 
            return { 
               requests: wire.requests.length, address: wire.peerAddress,
               amInterested: wire.amInterested, isSeeder: wire.isSeeder,
