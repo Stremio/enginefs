@@ -19,6 +19,8 @@ var async = require("async");
 
 var EngineFS =  new events.EventEmitter();
 
+var Counter = require("./lib/refcounter");
+
 // Events:
 // stream-open
 // stream-close
@@ -399,60 +401,30 @@ function Emit(args)
     EngineFS.emit(args.join(":"));
 };
 
-// Increment/decrement a counter on `incEv`/`decEv`; generate the ID of the counter with `idFn`
-// Calls `onPositive` when counter is >0 and `onZero` when counter has stayed on 0 for `timeout` milliseconds
-function Counter(incEv, decEv, idFn, onPositive, onZero, timeout)
-{
-    var counter = {}, timeouts = {};
-    EngineFS.on(incEv, function(hash, idx) {
-        var id = idFn(hash, idx);
-        if (! counter.hasOwnProperty(id)) { counter[id] = 0; onPositive(hash, idx); }
-        counter[id]++;
-
-        if (timeouts[id]) {
-            clearTimeout(timeouts[id]);
-            delete timeouts[id];
-        };
-    });
-    EngineFS.on(decEv, function(hash, idx) {
-        var id = idFn(hash, idx);
-        counter[id]--;
-        if (counter[id] == 0) {
-            if (timeouts[id]) clearTimeout(timeouts[id]);
-            timeouts[id] = setTimeout(function() { 
-                onZero(hash, idx); 
-                delete counter[id]; delete timeouts[id];
-            }, timeout);
-        };
-    });
-};
-
-new Counter("stream-open", "stream-close", function(hash, idx) { return hash+":"+idx }, function(hash, idx) { 
+new Counter(EngineFS, "stream-open", "stream-close", function(hash, idx) { return hash+":"+idx }, function(hash, idx) { 
     Emit(["stream-active",hash,idx])
 }, function(hash, idx) {  
     Emit(["stream-inactive",hash,idx])
 }, EngineFS.STREAM_TIMEOUT);
 
-new Counter("stream-open", "stream-close", function(hash, idx) { return hash }, function(hash) {
+new Counter(EngineFS, "stream-open", "stream-close", function(hash, idx) { return hash }, function(hash) {
     Emit(["engine-active",hash]);
 }, function(hash) {  
     Emit(["engine-inactive",hash]);
 }, EngineFS.ENGINE_TIMEOUT); // Keep engines active for STREAM_TIMEOUT * 60
 
-new Counter("stream-created", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
+new Counter(EngineFS, "stream-created", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
     Emit(["engine-idle",hash]);
 }, EngineFS.STREAM_TIMEOUT);
 
 
 module.exports = EngineFS;
 module.exports.http = createServer;
-// FUSE: TODO
 
 module.exports.sendCORSHeaders = sendCORSHeaders;
 module.exports.sendDLNAHeaders = sendDLNAHeaders;
 
 module.exports.create = createEngine;
-//module.exports.get = getEngine;
 module.exports.exists = existsEngine;
 module.exports.remove = removeEngine;
 module.exports.settings = settingsEngine;
