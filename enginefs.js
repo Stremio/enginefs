@@ -69,7 +69,7 @@ function createEngine(infoHash, options, cb)
     if (isNew && options.throttleSpeedForMemCache && options.storageMemoryCache) e.on("update", function() {
         if (!e.store.memoryBufSize) return;
         options.growler = options.growler || { flood: 0, pulse: 2*1024*1024 };
-        e.setFloodedPulse(options.growler.flood, options.growler.pulse * (1-(e.store.memoryBufSize() / options.storageMemoryCache)));
+        e.setFloodedPulse(options.growler.flood, options.growler.pulse * Math.max(0, (1-(e.store.memoryBufSize() / options.storageMemoryCache)) ) );
     });
     
     if (isNew) e.on("error", console.error.bind(console)); // for now that
