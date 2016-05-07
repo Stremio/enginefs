@@ -3,6 +3,7 @@
 var url = require("url");
 var os = require("os");
 var events = require("events");
+var path = require("path");
 
 var connect = require("connect");
 var rangeParser = require("range-parser");
@@ -39,21 +40,37 @@ var Counter = require("./lib/refcounter");
 EngineFS.STREAM_TIMEOUT = 30*1000; // how long must a stream be unused to be considered 'inactive'
 EngineFS.ENGINE_TIMEOUT = 60*1000; 
 
-var engines = {};
+var engines = { };
+
+EngineFS.getDefaults = function(ih) {
+    return {
+        peerSearch: { min: 40, max: 200, sources: [ "dht:"+ih ] },
+        dht: false, tracker: false, // LEGACY ARGS, disable because we use peerSearch
+    }
+};
+
+EngineFS.getCachePath = function(ih) {
+    return path.join(os.tmpdir(), ih);
+};
 
 function createEngine(infoHash, options, cb)
 {
-    if (! module.exports.engine) throw new Error("EngineFS requires EngineFS.engine to point to engine constructor");
+    if (! EngineFS.engine) throw new Error("EngineFS requires EngineFS.engine to point to engine constructor");
 
+    if (typeof(options) === "function") { cb = options; options = null; }
     cb = cb || function() { };
-    options = options || { };
+    if (engines[infoHash]) return engines[infoHash].ready(function() { cb(null, engines[infoHash]) });
+    EngineFS.once("engine-ready:"+infoHash, function() { cb(null, engines[infoHash]) });
+
+    options = options || EngineFS.getDefaults(infoHash);
+    options.path = options.path || EngineFS.getCachePath(infoHash);
 
     Emit(["engine-create", infoHash, options]);
     
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
     var isNew = !engines[infoHash];
-    var e = engines[infoHash] = engines[infoHash] || module.exports.engine(torrent, options);
+    var e = engines[infoHash] = engines[infoHash] || EngineFS.engine(torrent, options);
     e.swarm.resume(); // In case it's paused
 
     if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
@@ -119,14 +136,6 @@ function listEngines()
     return Object.keys(engines);
 }
 
-function requestEngine(infoHash, cb) 
-{
-    if (engines[infoHash]) return engines[infoHash].ready(function() { cb(null, engines[infoHash]) });
-
-    EngineFS.emit("request", infoHash);
-    EngineFS.once("engine-ready:"+infoHash, function() { cb(null, engines[infoHash]) });
-}
-
 var router = Router();
 var middlewares = [];
 function installMiddleware(middleware) 
@@ -161,7 +170,7 @@ function openPath(path, cb)
 
         if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index"));
         
-        requestEngine(infoHash, function(err, engine)
+        createEngine(infoHash, function(err, engine)
         {
             if (err) return cb(err);
             if (! engine.files[i]) return cb(new Error("Torrent does not contain file with index "+i));
@@ -425,20 +434,22 @@ new Counter(EngineFS, "stream-created", "stream-cached", function(hash, idx) { r
 }, EngineFS.STREAM_TIMEOUT);
 
 
+EngineFS.http = createServer;
+
+EngineFS.sendCORSHeaders = sendCORSHeaders;
+EngineFS.sendDLNAHeaders = sendDLNAHeaders;
+
+EngineFS.create = createEngine;
+EngineFS.exists = existsEngine;
+EngineFS.remove = removeEngine;
+EngineFS.settings = settingsEngine;
+EngineFS.stats = statsEngine;
+EngineFS.list = listEngines;
+
+EngineFS.prewarmStream = prewarmStream;
+
+EngineFS.middleware = installMiddleware;
+EngineFS.router = router;
+
 module.exports = EngineFS;
-module.exports.http = createServer;
 
-module.exports.sendCORSHeaders = sendCORSHeaders;
-module.exports.sendDLNAHeaders = sendDLNAHeaders;
-
-module.exports.create = createEngine;
-module.exports.exists = existsEngine;
-module.exports.remove = removeEngine;
-module.exports.settings = settingsEngine;
-module.exports.stats = statsEngine;
-module.exports.list = listEngines;
-
-module.exports.prewarmStream = prewarmStream;
-
-module.exports.middleware = installMiddleware;
-module.exports.router = router;
