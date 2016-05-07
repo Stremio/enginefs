@@ -60,10 +60,9 @@ function createEngine(infoHash, options, cb)
 
     if (typeof(options) === "function") { cb = options; options = null; }
     cb = cb || function() { };
-    if (engines[infoHash]) return engines[infoHash].ready(function() { cb(null, engines[infoHash]) });
     EngineFS.once("engine-ready:"+infoHash, function() { cb(null, engines[infoHash]) });
 
-    options = options || util._extend(EngineFS.getDefaults(infoHash), options);
+    options = util._extend(EngineFS.getDefaults(infoHash), options || { });
     options.path = options.path || EngineFS.getCachePath(infoHash);
 
     Emit(["engine-create", infoHash, options]);
@@ -194,13 +193,23 @@ function openPath(path, cb)
 
 /* Basic routes
  */
-router.get("/favicon.ico", function(req, res) { res.writeHead(404); res.end() });
-router.get("/:infoHash/stats.json", function(req, res) { res.end(JSON.stringify(getStatistics(engines[req.params.infoHash]))) });
-router.get("/:infoHash/:idx/stats.json", function(req, res) { res.end(JSON.stringify(getStatistics(engines[req.params.infoHash], req.params.idx))) });
+var jsonHead = { "Content-Type": "application/json" };
+router.get("/favicon.ico", function(req, res) { res.writeHead(404, jsonHead); res.end() });
+router.get("/:infoHash/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash]))) });
+router.get("/:infoHash/:idx/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash], req.params.idx))) });
 router.get("/stats.json", function(req, res) { 
+    res.writeHead(200, jsonHead);
     var stats = { };
     for (ih in engines) stats[ih] = getStatistics(engines[ih]);
     res.end(JSON.stringify(stats)); 
+});
+
+router.post("/:infoHash/create", function(req, res) {
+    var ih = req.params.infoHash.toLowerCase();
+    createEngine(ih, req.body, function() {
+        res.writeHead(200, jsonHead);
+        res.end(JSON.stringify(getStatistics(engines[ih])));
+    });
 });
 
 /* Front-end: HTTP
