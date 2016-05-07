@@ -14,7 +14,6 @@ var pump = require("pump");
 
 var PeerSearch = require("peer-search");
 
-var _  = require("lodash"); // TODO: used only for _.map and _.once; eliminate that
 var async = require("async");
 
 var EngineFS =  new events.EventEmitter();
@@ -29,6 +28,7 @@ var Counter = require("./lib/refcounter");
 // stream-cached stream-cached:hash:idx
 // stream-progress stream-progress:hash:idx
  
+// engine-create
 // engine-created
 
 // engine-active
@@ -182,12 +182,16 @@ function openPath(path, cb)
     cb(new Error("Cannot parse path"));
 }
 
-/* Boilerplate routes
+/* Basic routes
  */
 router.get("/favicon.ico", function(req, res) { res.writeHead(404); res.end() });
-router.get("/stats.json", function(req, res) { res.end(JSON.stringify(_.map(engines, getStatistics))) });
 router.get("/:infoHash/stats.json", function(req, res) { res.end(JSON.stringify(getStatistics(engines[req.params.infoHash]))) });
 router.get("/:infoHash/:idx/stats.json", function(req, res) { res.end(JSON.stringify(getStatistics(engines[req.params.infoHash], req.params.idx))) });
+router.get("/stats.json", function(req, res) { 
+    var stats = { };
+    for (ih in engines) stats[ih] = getStatistics(engines[ih]);
+    res.end(JSON.stringify(stats)); 
+});
 
 /* Front-end: HTTP
  */
@@ -211,7 +215,13 @@ function createServer(port)
             
             // Handle LinvoFS events
             EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle));
-            var emitClose = _.once(function() { EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle)) });
+
+            var closed = false;
+            var emitClose = function() { 
+                if (closed) return;
+                closed = true;
+                EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle));
+            };
             res.on("finish", emitClose);
             res.on("close", emitClose);
 
