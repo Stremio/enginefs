@@ -4,6 +4,7 @@ var url = require("url");
 var os = require("os");
 var events = require("events");
 var path = require("path");
+var util = require("util");
 
 var connect = require("connect");
 var rangeParser = require("range-parser");
@@ -62,7 +63,7 @@ function createEngine(infoHash, options, cb)
     if (engines[infoHash]) return engines[infoHash].ready(function() { cb(null, engines[infoHash]) });
     EngineFS.once("engine-ready:"+infoHash, function() { cb(null, engines[infoHash]) });
 
-    options = options || EngineFS.getDefaults(infoHash);
+    options = options || util._extend(EngineFS.getDefaults(infoHash), options);
     options.path = options.path || EngineFS.getCachePath(infoHash);
 
     Emit(["engine-create", infoHash, options]);
