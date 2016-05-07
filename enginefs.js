@@ -47,6 +47,8 @@ function createEngine(infoHash, options, cb)
 
     cb = cb || function() { };
     options = options || { };
+
+    Emit(["engine-create", infoHash, options]);
     
     var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
