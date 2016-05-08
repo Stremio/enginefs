@@ -211,6 +211,16 @@ router.post("/:infoHash/create", function(req, res) {
         res.end(JSON.stringify(getStatistics(engines[ih])));
     });
 });
+router.get("/:infoHash/remove", function(req, res) { 
+ removeEngine(req.params.infoHash); 
+ res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
+});
+router.get("/removeAll", function(req, res) { 
+  for (ih in engines) removeEngine(ih);
+  res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
+});
+
+
 
 /* Front-end: HTTP
  */
