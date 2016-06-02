@@ -1,5 +1,3 @@
-/* TODO: split that file into parts
- */
 var url = require("url");
 var os = require("os");
 var events = require("events");
@@ -113,7 +111,7 @@ function settingsEngine(infoHash, settings)
 {
    var e = engines[infoHash];
    if (!e) return;
-   if (settings.hasOwnProperty("writeQueue")) e.ready(function() {
+   if (settings.hasOwnProperty("writeQueue") && e.store.writequeue) e.ready(function() {
         if (settings.writeQueue == "PAUSE") { 
             e.store.writequeue.pause(); 
             setTimeout(function() { e.store.writequeue.resume() }, 50*1000); // Done for safety reasons
