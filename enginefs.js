@@ -276,7 +276,7 @@ function createServer(port)
             res.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
 
             if (req.method === "HEAD") return res.end();
-            range.buffer = buffer;
+            range.buffer = e.buffer;
             pump(handle.createReadStream(range), res);  
         });
     });
