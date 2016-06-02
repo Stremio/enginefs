@@ -269,7 +269,7 @@ function createServer(port)
             if (!range) {
                 res.setHeader("Content-Length", handle.length);
                 if (req.method === "HEAD") return res.end();
-                pump(handle.createReadStream(), res);
+                pump(handle.createReadStream({ buffer: e.buffer }), res);
                 return;
             }
 
@@ -278,6 +278,7 @@ function createServer(port)
             res.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
 
             if (req.method === "HEAD") return res.end();
+            range.buffer = buffer;
             pump(handle.createReadStream(range), res);  
         });
     });
@@ -423,7 +424,7 @@ EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(inf
     var startPiece = (file.offset / vLen) | 0;
     var endPiece = ((file.offset+file.length-1) / vLen) | 0;
     var ratio = vLen / e.torrent.pieceLength;
-    e.select(startPiece*ratio, (endPiece+1)*ratio, false);
+    if (! e.buffer) e.select(startPiece*ratio, (endPiece+1)*ratio, false);
 }) });
 
 
