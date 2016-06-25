@@ -135,6 +135,7 @@ function listEngines()
 }
 
 var router = Router();
+var externalRouter = Router();
 var middlewares = [];
 function installMiddleware(middleware) 
 {
@@ -231,6 +232,7 @@ function createServer(port)
     app.use(bodyParser.urlencoded({ extended: true }));
     app.use(sendCORSHeaders);
     app.use(sendDLNAHeaders);
+    app.use(externalRouter);
     app.use(router);
     app.use(function(req, res, next) { tryMiddleware(req._parsedUrl.pathname, req, res, function(s) { s!==true && next() }) }); // COMPAT
 
@@ -468,7 +470,7 @@ EngineFS.list = listEngines;
 EngineFS.prewarmStream = prewarmStream;
 
 EngineFS.middleware = installMiddleware;
-EngineFS.router = router;
+EngineFS.router = externalRouter;
 
 module.exports = EngineFS;
 
