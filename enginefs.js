@@ -193,10 +193,6 @@ function openPath(path, cb)
 /* Basic routes
  */
 var jsonHead = { "Content-Type": "application/json" };
-
-router.use(function(req, res, next) { 
-    if (EngineFS.loggingEnabled) console.log("-> "+url.parse(req.url).path+" "+(req.headers["range"] || "")); next();
-});
 router.get("/favicon.ico", function(req, res) { res.writeHead(404, jsonHead); res.end() });
 router.get("/:infoHash/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash]))) });
 router.get("/:infoHash/:idx/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash], req.params.idx))) });
@@ -231,6 +227,10 @@ function createServer(port)
 {
     var http = require("http");
     var app = connect();
+
+    app.use(function(req, res, next) { 
+        if (EngineFS.loggingEnabled) console.log("-> "+url.parse(req.url).path+" "+(req.headers["range"] || "")); next();
+    });
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
