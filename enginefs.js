@@ -476,5 +476,7 @@ EngineFS.prewarmStream = prewarmStream;
 EngineFS.middleware = installMiddleware;
 EngineFS.router = externalRouter;
 
+EngineFS.loggingEnabled = false;
+
 module.exports = EngineFS;
 
