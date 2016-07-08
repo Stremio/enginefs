@@ -136,20 +136,6 @@ function listEngines()
 
 var router = Router();
 var externalRouter = Router();
-var middlewares = [];
-function installMiddleware(middleware) 
-{
-    middlewares.push(middleware);
-}
-
-// TODO: in order to be abstract, replace req/res
-function tryMiddleware(path, req, res, cb)
-{
-    async.eachSeries(middlewares, function(middleware, callback) { 
-        if (typeof(middleware) != "function") return callback(); // consider warning here
-        middleware(path, req, res, callback);
-    }, cb);
-}
 
 // Emulate opening a stream
 function prewarmStream(hash, idx)
@@ -238,7 +224,6 @@ function createServer(port)
     app.use(sendDLNAHeaders);
     app.use(externalRouter);
     app.use(router);
-    app.use(function(req, res, next) { tryMiddleware(req._parsedUrl.pathname, req, res, function(s) { s!==true && next() }) }); // COMPAT
 
     app.use(function(req, res, next) {
         var u = url.parse(req.url, true);
@@ -473,7 +458,6 @@ EngineFS.list = listEngines;
 
 EngineFS.prewarmStream = prewarmStream;
 
-EngineFS.middleware = installMiddleware;
 EngineFS.router = externalRouter;
 
 EngineFS.loggingEnabled = false;
