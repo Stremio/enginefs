@@ -84,7 +84,6 @@ function createEngine(infoHash, options, cb)
     }
     if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
     
-    if (isNew) e.on("error", console.error.bind(console)); // for now that
     if (isNew) e.on("error", function(err) { EngineFS.emit("engine-error:"+infoHash, err); EngineFS.emit("engine-error", infoHash, err); });
     
     if (isNew) Emit(["engine-created", infoHash]);
