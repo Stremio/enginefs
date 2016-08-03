@@ -269,11 +269,14 @@ function createServer(port)
             if (u.query.subtitles) res.setHeader("CaptionInfo.sec", u.query.subtitles);
 
             //res.setHeader("Access-Control-Max-Age", "1728000");
+            
+            var opts = { };
+            if (req.headers["enginefs-priority"]) opts.priority = req.headers["enginefs-priority"];
 
             if (!range) {
                 res.setHeader("Content-Length", handle.length);
                 if (req.method === "HEAD") return res.end();
-                pump(handle.createReadStream({ buffer: e.buffer }), res);
+                pump(handle.createReadStream(opts), res);
                 return;
             }
 
@@ -282,8 +285,7 @@ function createServer(port)
             res.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
 
             if (req.method === "HEAD") return res.end();
-            range.buffer = e.buffer;
-            pump(handle.createReadStream(range), res);  
+            pump(handle.createReadStream(util._extend(range, opts)), res);  
         });
     });
 
