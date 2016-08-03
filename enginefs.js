@@ -256,7 +256,7 @@ function createServer(port)
             //res.setHeader("Access-Control-Max-Age", "1728000");
             
             var opts = { };
-            if (req.headers["enginefs-priority"]) opts.priority = req.headers["enginefs-priority"];
+            if (req.headers["enginefs-prio"]) opts.priority = req.headers["enginefs-prio"];
 
             if (!range) {
                 res.setHeader("Content-Length", handle.length);
