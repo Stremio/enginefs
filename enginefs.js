@@ -215,7 +215,7 @@ function createServer(port)
 
     app.use(function(req, res, next) { 
         util._extend(req, url.parse(req.url, true));
-        if (EngineFS.loggingEnabled) console.log("-> "+url.parse(req.url).path+" "+(req.headers["range"] || "")); next();
+        if (EngineFS.loggingEnabled) console.log("-> "+req.method+" "+url.parse(req.url).path+" "+(req.headers["range"] || "")); next();
     });
 
     app.use(bodyParser.json());
