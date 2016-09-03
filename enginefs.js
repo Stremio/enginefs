@@ -102,6 +102,7 @@ function existsEngine(infoHash)
 
 function removeEngine(infoHash)
 {
+    if (!engines[infoHash]) return;
     engines[infoHash].destroy(function() { Emit(["engine-destroyed", infoHash]) });
     delete engines[infoHash];
 }
