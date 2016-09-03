@@ -204,7 +204,54 @@ router.get("/removeAll", function(req, res) {
   res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
 });
 
+router.get("/:infoHash/:idx", sendCORSHeaders, sendDLNAHeaders, function(req, res, next) {
+    var u = url.parse(req.url, true);
+    openPath(u.pathname, function(err, handle, e)
+    {
+        if (err) { console.error(err); res.statusCode = 500; return res.end(); }
+        
+        // Handle LinvoFS events
+        EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle));
 
+        var closed = false;
+        var emitClose = function() { 
+            if (closed) return;
+            closed = true;
+            EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle));
+        };
+        res.on("finish", emitClose);
+        res.on("close", emitClose);
+
+        req.connection.setTimeout(24*60*60*1000);
+        //req.connection.setTimeout(0);
+
+        var range = req.headers.range;
+        range = range && rangeParser(handle.length, range)[0];
+        res.setHeader("Accept-Ranges", "bytes");
+        res.setHeader("Content-Type", mime.lookup(handle.name));
+        res.setHeader("Cache-Control", "max-age=0, no-cache");
+        if (u.query.subtitles) res.setHeader("CaptionInfo.sec", u.query.subtitles);
+
+        //res.setHeader("Access-Control-Max-Age", "1728000");
+        
+        var opts = { };
+        if (req.headers["enginefs-prio"]) opts.priority = parseInt(req.headers["enginefs-prio"]) || 1;
+
+        if (!range) {
+            res.setHeader("Content-Length", handle.length);
+            if (req.method === "HEAD") return res.end();
+            pump(handle.createReadStream(opts), res);
+            return;
+        }
+
+        res.statusCode = 206;
+        res.setHeader("Content-Length", range.end - range.start + 1);
+        res.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
+
+        if (req.method === "HEAD") return res.end();
+        pump(handle.createReadStream(util._extend(range, opts)), res);  
+    });
+});
 
 /* Front-end: HTTP
  */
@@ -220,59 +267,8 @@ function createServer(port)
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
-    app.use(sendCORSHeaders);
-    app.use(sendDLNAHeaders);
     app.use(externalRouter);
     app.use(router);
-
-    app.use(function(req, res, next) {
-        var u = url.parse(req.url, true);
-        openPath(u.pathname, function(err, handle, e)
-        {
-            if (err) { console.error(err); res.statusCode = 500; return res.end(); }
-            
-            // Handle LinvoFS events
-            EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle));
-
-            var closed = false;
-            var emitClose = function() { 
-                if (closed) return;
-                closed = true;
-                EngineFS.emit("stream-close", e.infoHash, e.files.indexOf(handle));
-            };
-            res.on("finish", emitClose);
-            res.on("close", emitClose);
-
-            req.connection.setTimeout(24*60*60*1000);
-            //req.connection.setTimeout(0);
-
-            var range = req.headers.range;
-            range = range && rangeParser(handle.length, range)[0];
-            res.setHeader("Accept-Ranges", "bytes");
-            res.setHeader("Content-Type", mime.lookup(handle.name));
-            res.setHeader("Cache-Control", "max-age=0, no-cache");
-            if (u.query.subtitles) res.setHeader("CaptionInfo.sec", u.query.subtitles);
-
-            //res.setHeader("Access-Control-Max-Age", "1728000");
-            
-            var opts = { };
-            if (req.headers["enginefs-prio"]) opts.priority = parseInt(req.headers["enginefs-prio"]) || 1;
-
-            if (!range) {
-                res.setHeader("Content-Length", handle.length);
-                if (req.method === "HEAD") return res.end();
-                pump(handle.createReadStream(opts), res);
-                return;
-            }
-
-            res.statusCode = 206;
-            res.setHeader("Content-Length", range.end - range.start + 1);
-            res.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
-
-            if (req.method === "HEAD") return res.end();
-            pump(handle.createReadStream(util._extend(range, opts)), res);  
-        });
-    });
 
     var server = http.createServer(app);
     if (port) server.listen(port);
