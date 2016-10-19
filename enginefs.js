@@ -189,9 +189,9 @@ router.get("/stats.json", function(req, res) {
     res.end(JSON.stringify(stats)); 
 });
 
-router.post("/:infoHash/create", function(req, res) {
+router.all("/:infoHash/create", function(req, res) {
     var ih = req.params.infoHash.toLowerCase();
-    createEngine(ih, req.body, function() {
+    createEngine(ih, req.body || { }, function() {
         res.writeHead(200, jsonHead);
         res.end(JSON.stringify(getStatistics(engines[ih])));
     });
