@@ -347,9 +347,9 @@ function getStatistics(e, idx)
         
         sources: e.swarm.peerSearch && e.swarm.peerSearch.stats(),
         
-        dht: !!e.dht,
-        dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
-        dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
+        //dht: !!e.dht,
+        //dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
+        //dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
     };
     // TODO: better stream-specific data; e.g. download/uploaded should only be specific to this stream
     if (!isNaN(idx) && e.torrent && e.torrent.files[idx]) {
