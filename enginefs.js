@@ -84,9 +84,12 @@ function createEngine(infoHash, options, cb)
     }
     if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
     
-    if (isNew) e.on("error", function(err) { EngineFS.emit("engine-error:"+infoHash, err); EngineFS.emit("engine-error", infoHash, err); });
-    
-    if (isNew) Emit(["engine-created", infoHash]);
+    if (isNew) {
+        e.on("error", function(err) { EngineFS.emit("engine-error:"+infoHash, err); EngineFS.emit("engine-error", infoHash, err); });    
+        e.on("invalid-piece", function(p) { EngineFS.emit("engine-invalid-piece:"+infoHash, p); EngineFS.emit("engine-invalid-piece", infoHash, p); });    
+        Emit(["engine-created", infoHash]);
+    }
+
     e.ready(function() { EngineFS.emit("engine-ready:"+infoHash, e.torrent); EngineFS.emit("engine-ready", infoHash, e.torrent); })
 }
 
