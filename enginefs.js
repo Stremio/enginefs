@@ -192,9 +192,9 @@ router.get("/stats.json", function(req, res) {
     res.end(JSON.stringify(stats)); 
 });
 
-router.post("/:infoHash/create", function(req, res) {
+router.all("/:infoHash/create", function(req, res) {
     var ih = req.params.infoHash.toLowerCase();
-    createEngine(ih, req.body, function() {
+    createEngine(ih, req.body || { }, function() {
         res.writeHead(200, jsonHead);
         res.end(JSON.stringify(getStatistics(engines[ih])));
     });
@@ -350,9 +350,9 @@ function getStatistics(e, idx)
         
         sources: e.swarm.peerSearch && e.swarm.peerSearch.stats(),
         
-        dht: !!e.dht,
-        dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
-        dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
+        //dht: !!e.dht,
+        //dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
+        //dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
     };
     // TODO: better stream-specific data; e.g. download/uploaded should only be specific to this stream
     if (!isNaN(idx) && e.torrent && e.torrent.files[idx]) {
