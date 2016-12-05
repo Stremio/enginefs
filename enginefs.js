@@ -464,5 +464,10 @@ EngineFS.router = externalRouter;
 
 EngineFS.loggingEnabled = false;
 
+EngineFS.getRootRouter = function() {
+	// if you want to use this, make sure you are also using bodyParser for json and urlencoded
+	return router
+};
+
 module.exports = EngineFS;
 
