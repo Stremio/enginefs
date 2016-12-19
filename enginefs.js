@@ -208,7 +208,7 @@ router.get("/removeAll", function(req, res) {
   res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
 });
 
-router.get("/:infoHash/:idx", sendCORSHeaders, sendDLNAHeaders, function(req, res, next) {
+router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
     var u = url.parse(req.url, true);
     openPath(u.pathname, function(err, handle, e)
     {
@@ -271,6 +271,7 @@ function createServer(port)
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
+    app.use(sendCORSHeaders);
     app.use(externalRouter);
     app.use(router);
 
