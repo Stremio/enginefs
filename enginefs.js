@@ -151,7 +151,7 @@ function openPath(path, cb)
 {
     // length: 40 ; info hash
     var parts = path.split("/").filter(function(x) { return x });
-    if (parts[0] && parts[0].length == 40)
+    if (parts[0] && parts[0].match(new RegExp("([0-9A-Fa-f]){40}", "g")))
     {
         var infoHash = parts[0].toLowerCase();
         var i = Number(parts[1]);
