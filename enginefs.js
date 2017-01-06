@@ -20,6 +20,8 @@ var EngineFS =  new events.EventEmitter();
 
 var Counter = require("./lib/refcounter");
 
+var IH_REGEX = new RegExp("([0-9A-Fa-f]){40}", "g");
+
 // Events:
 // stream-open
 // stream-close
@@ -151,7 +153,7 @@ function openPath(path, cb)
 {
     // length: 40 ; info hash
     var parts = path.split("/").filter(function(x) { return x });
-    if (parts[0] && parts[0].match(new RegExp("([0-9A-Fa-f]){40}", "g")))
+    if (parts[0] && parts[0].match(IH_REGEX))
     {
         var infoHash = parts[0].toLowerCase();
         var i = Number(parts[1]);
