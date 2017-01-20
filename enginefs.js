@@ -352,6 +352,7 @@ function getStatistics(e, idx)
         uploadSpeed: e.swarm.downloadSpeed(),
         
         sources: e.swarm.peerSearch && e.swarm.peerSearch.stats(),
+	peerSearchPaused: e.swarm.peerSearch ? e.swarm.peerSearch.isPaused() : undefined,
         
         //dht: !!e.dht,
         //dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
