@@ -333,6 +333,8 @@ function getStatistics(e, idx)
         connectionTries: e.swarm.tries,
         paused: e.swarm.paused,
         swarmPaused: e.swarm.paused,
+	swarmConnections: e.swarm.connections.length,
+	swarmSize: e.swarm.size,
 
         selections: e.selection,
         wires: idx!==undefined ? null : e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).map(function(wire) { 
