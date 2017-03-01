@@ -13,6 +13,7 @@ var mime = require("mime");
 var pump = require("pump");
 
 var PeerSearch = require("peer-search");
+var parseTorrentFile = require('parse-torrent-file')
 
 var async = require("async");
 
@@ -197,6 +198,21 @@ router.get("/stats.json", function(req, res) {
 router.all("/:infoHash/create", function(req, res) {
     var ih = req.params.infoHash.toLowerCase();
     createEngine(ih, req.body || { }, function() {
+        res.writeHead(200, jsonHead);
+        res.end(JSON.stringify(getStatistics(engines[ih])));
+    });
+});
+router.all("/create", function(req, res) {
+    var parsed
+    try {
+        var torrent = fs.readFileSync(req.body.from)
+        parsed = parseTorrentFile(torrent)
+    } catch (e) {
+        res.writeHead(400, jsonHead);
+        res.end();
+    }
+    var ih = parsed.infoHash.toLowerCase();
+    createEngine(ih, { torrent: parsed }, function() {
         res.writeHead(200, jsonHead);
         res.end(JSON.stringify(getStatistics(engines[ih])));
     });
