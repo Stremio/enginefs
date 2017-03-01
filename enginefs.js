@@ -3,6 +3,7 @@ var os = require("os");
 var events = require("events");
 var path = require("path");
 var util = require("util");
+var fs = require("fs")
 
 var connect = require("connect");
 var rangeParser = require("range-parser");
