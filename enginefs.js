@@ -3,7 +3,7 @@ var os = require("os");
 var events = require("events");
 var path = require("path");
 var util = require("util");
-var fs = require("fs")
+var fs = require("fs");
 
 var connect = require("connect");
 var rangeParser = require("range-parser");
@@ -203,19 +203,21 @@ router.all("/:infoHash/create", function(req, res) {
         res.end(JSON.stringify(getStatistics(engines[ih])));
     });
 });
+
 router.all("/create", function(req, res) {
-    var parsed
-    try {
-        var torrent = fs.readFileSync(req.body.from)
-        parsed = parseTorrentFile(torrent)
-    } catch (e) {
-        res.writeHead(400, jsonHead);
-        res.end();
-    }
-    var ih = parsed.infoHash.toLowerCase();
-    createEngine(ih, { torrent: parsed }, function() {
-        res.writeHead(200, jsonHead);
-        res.end(JSON.stringify(getStatistics(engines[ih])));
+    var torrent = fs.readFile(req.body.from,function (error, file) {
+        if (error){
+            res.writeHead(400, jsonHead);
+            res.end();
+            console.error(error)
+            return
+        } 
+        var parsed = parseTorrentFile(file)
+        var ih = parsed.infoHash.toLowerCase();
+        createEngine(ih, { torrent: parsed }, function() {
+            res.writeHead(200, jsonHead);
+            res.end(JSON.stringify(getStatistics(engines[ih])));
+        })
     });
 });
 router.get("/:infoHash/remove", function(req, res) { 
@@ -493,4 +495,3 @@ EngineFS.getRootRouter = function() {
 };
 
 module.exports = EngineFS;
-
