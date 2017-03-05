@@ -183,6 +183,26 @@ function openPath(path, cb)
     cb(new Error("Cannot parse path"));
 }
 
+function torrentFileRead(req, callback){
+    try{
+        fs.readFile(req.body.from, callback)
+    }
+    catch(e){
+        callback(e,null)
+    }
+}
+
+function torrentFileParse(file, callback) {
+    try{
+        var parsed = parseTorrentFile(file)
+        var ih = parsed.infoHash.toLowerCase();
+        createEngine(ih, { torrent: parsed }, callback)
+    }
+    catch(e){
+        callback(e,null)
+    }
+}
+
 /* Basic routes
  */
 var jsonHead = { "Content-Type": "application/json" };
@@ -205,37 +225,22 @@ router.all("/:infoHash/create", function(req, res) {
 });
 
 router.all("/create", function(req, res) {
-    async.waterfall([
-        function (callback){
-            try{
-                fs.readFile(req.body.from, callback)
-            }
-            catch(e){
-                callback(e,null)
-            }
-        },
-        function (file, callback) {
-            try{
-                parsed = parseTorrentFile(file)
-                var ih = parsed.infoHash.toLowerCase();
-                createEngine(ih, { torrent: parsed }, callback)
-            }
-            catch(e){
-                callback(e,null)
-            }
-        }
+    async.waterfall([ 
+        function(callback) { callback(null,req) },
+        torrentFileRead,
+        torrentFileParse
     ],
-    function (err, result) {
-        if(err){
-            res.writeHead(400, jsonHead);
-            res.end();
-            console.error(err);
-        }
-        else{
-            res.writeHead(200, jsonHead);
-            res.end(JSON.stringify(getStatistics(result)));
-        }
-    });
+        function (err, result) {
+            if(err){
+                res.writeHead(400, jsonHead);
+                res.end();
+                console.error(err);
+            }
+            else{
+                res.writeHead(200, jsonHead);
+                res.end(JSON.stringify(getStatistics(result)));
+            }
+        });
 });
 router.get("/:infoHash/remove", function(req, res) { 
  removeEngine(req.params.infoHash); 
