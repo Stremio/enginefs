@@ -205,19 +205,36 @@ router.all("/:infoHash/create", function(req, res) {
 });
 
 router.all("/create", function(req, res) {
-    var torrent = fs.readFile(req.body.from,function (error, file) {
-        if (error){
+    async.waterfall([
+        function (callback){
+            try{
+                fs.readFile(req.body.from, callback)
+            }
+            catch(e){
+                callback(e,null)
+            }
+        },
+        function (file, callback) {
+            try{
+                parsed = parseTorrentFile(file)
+                var ih = parsed.infoHash.toLowerCase();
+                createEngine(ih, { torrent: parsed }, callback)
+            }
+            catch(e){
+                callback(e,null)
+            }
+        }
+    ],
+    function (err, result) {
+        if(err){
             res.writeHead(400, jsonHead);
             res.end();
-            console.error(error)
-            return
-        } 
-        var parsed = parseTorrentFile(file)
-        var ih = parsed.infoHash.toLowerCase();
-        createEngine(ih, { torrent: parsed }, function() {
+            console.error(err);
+        }
+        else{
             res.writeHead(200, jsonHead);
-            res.end(JSON.stringify(getStatistics(engines[ih])));
-        })
+            res.end(JSON.stringify(getStatistics(result)));
+        }
     });
 });
 router.get("/:infoHash/remove", function(req, res) { 
