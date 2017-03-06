@@ -3,6 +3,7 @@ var os = require("os");
 var events = require("events");
 var path = require("path");
 var util = require("util");
+var fs = require("fs");
 
 var connect = require("connect");
 var rangeParser = require("range-parser");
@@ -13,6 +14,7 @@ var mime = require("mime");
 var pump = require("pump");
 
 var PeerSearch = require("peer-search");
+var parseTorrentFile = require('parse-torrent-file')
 
 var async = require("async");
 
@@ -181,6 +183,26 @@ function openPath(path, cb)
     cb(new Error("Cannot parse path"));
 }
 
+function torrentFileRead(req, callback){
+    try{
+        fs.readFile(req.body.from, callback)
+    }
+    catch(e){
+        callback(e,null)
+    }
+}
+
+function torrentFileParse(file, callback) {
+    try{
+        var parsed = parseTorrentFile(file)
+        var ih = parsed.infoHash.toLowerCase();
+        createEngine(ih, { torrent: parsed }, callback)
+    }
+    catch(e){
+        callback(e,null)
+    }
+}
+
 /* Basic routes
  */
 var jsonHead = { "Content-Type": "application/json" };
@@ -200,6 +222,25 @@ router.all("/:infoHash/create", function(req, res) {
         res.writeHead(200, jsonHead);
         res.end(JSON.stringify(getStatistics(engines[ih])));
     });
+});
+
+router.all("/create", function(req, res) {
+    async.waterfall([ 
+        function(callback) { callback(null,req) },
+        torrentFileRead,
+        torrentFileParse
+    ],
+        function (err, result) {
+            if(err){
+                res.writeHead(400, jsonHead);
+                res.end();
+                console.error(err);
+            }
+            else{
+                res.writeHead(200, jsonHead);
+                res.end(JSON.stringify(getStatistics(result)));
+            }
+        });
 });
 router.get("/:infoHash/remove", function(req, res) { 
  removeEngine(req.params.infoHash); 
@@ -476,4 +517,3 @@ EngineFS.getRootRouter = function() {
 };
 
 module.exports = EngineFS;
-

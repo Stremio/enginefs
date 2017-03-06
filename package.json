@@ -13,6 +13,7 @@
     "body-parser": "1.x.x",
     "connect": "^3.4.1",
     "mime": "^1.2.11",
+    "parse-torrent-file": "^4.0.1",
     "peer-search": "Ivshti/peer-search",
     "pump": "^1.0.0",
     "range-parser": "^1.0.0",
