@@ -374,8 +374,8 @@ function getStatistics(e, idx)
         connectionTries: e.swarm.tries,
         paused: e.swarm.paused,
         swarmPaused: e.swarm.paused,
-	swarmConnections: e.swarm.connections.length,
-	swarmSize: e.swarm.size,
+        swarmConnections: e.swarm.connections.length,
+        swarmSize: e.swarm.size,
 
         selections: e.selection,
         wires: idx!==undefined ? null : e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).map(function(wire) { 
@@ -395,8 +395,8 @@ function getStatistics(e, idx)
         uploadSpeed: e.swarm.downloadSpeed(),
         
         sources: e.swarm.peerSearch && e.swarm.peerSearch.stats(),
-	peerSearchRunning: e.swarm.peerSearch ? e.swarm.peerSearch.isRunning() : undefined,
-        
+        peerSearchRunning: e.swarm.peerSearch ? e.swarm.peerSearch.isRunning() : undefined,
+            
         //dht: !!e.dht,
         //dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
         //dhtVisited: e.dht ? Object.keys(e.dht.visited).length : null
@@ -512,8 +512,8 @@ EngineFS.router = externalRouter;
 EngineFS.loggingEnabled = false;
 
 EngineFS.getRootRouter = function() {
-	// if you want to use this, make sure you are also using bodyParser for json and urlencoded
-	return router
+    // if you want to use this, make sure you are also using bodyParser for json and urlencoded
+    return router
 };
 
 module.exports = EngineFS;
