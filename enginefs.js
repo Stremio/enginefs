@@ -184,12 +184,7 @@ function openPath(path, cb)
 }
 
 function torrentFileRead(req, callback){
-    try{
-        fs.readFile(req.body.from, callback)
-    }
-    catch(e){
-        callback(e,null)
-    }
+    fs.readFile(req.body.from, callback)
 }
 
 function torrentFileParse(file, callback) {
