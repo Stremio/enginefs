@@ -9,7 +9,6 @@
     "url": "https://github.com/Ivshti/enginefs.git"
   },
   "dependencies": {
-    "async": "1.x.x",
     "body-parser": "1.x.x",
     "connect": "3.6.x",
     "mime": "^1.2.11",

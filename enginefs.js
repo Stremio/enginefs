@@ -16,8 +16,6 @@ var pump = require("pump");
 var PeerSearch = require("peer-search");
 var parseTorrentFile = require('parse-torrent-file')
 
-var async = require("async");
-
 var EngineFS =  new events.EventEmitter();
 
 var Counter = require("./lib/refcounter");
@@ -183,21 +181,6 @@ function openPath(path, cb)
     cb(new Error("Cannot parse path"));
 }
 
-function torrentFileRead(req, callback){
-    fs.readFile(req.body.from, callback)
-}
-
-function torrentFileParse(file, callback) {
-    try{
-        var parsed = parseTorrentFile(file)
-        var ih = parsed.infoHash.toLowerCase();
-        createEngine(ih, { torrent: parsed }, callback)
-    }
-    catch(e){
-        callback(e,null)
-    }
-}
-
 /* Basic routes
  */
 var jsonHead = { "Content-Type": "application/json" };
@@ -220,30 +203,40 @@ router.all("/:infoHash/create", function(req, res) {
 });
 
 router.all("/create", function(req, res) {
-    async.waterfall([ 
-        function(callback) { callback(null,req) },
-        torrentFileRead,
-        torrentFileParse
-    ],
-        function (err, result) {
-            if(err){
-                res.writeHead(400, jsonHead);
-                res.end();
-                console.error(err);
-            }
-            else{
-                res.writeHead(200, jsonHead);
-                res.end(JSON.stringify(getStatistics(result)));
-            }
-        });
+    fs.readFile(req.body.from, function(err, file) {
+        if (err) return onErr(err)
+
+        var ih = null;
+        try {
+            var parsed = parseTorrentFile(file)
+            ih = parsed.infoHash.toLowerCase();
+        } catch(e) { return onErr(e) }
+
+        createEngine(ih, { torrent: parsed }, function(err, res) { 
+            if (err) onErr(err)
+            else onSuccess(res)
+        })
+    })
+
+    function onErr(err) {
+        res.writeHead(400, jsonHead)
+        res.end()
+        console.error(err)
+    }
+
+    function onSuccess(result) {
+        res.writeHead(200, jsonHead)
+        res.end(JSON.stringify(getStatistics(result)))
+    }
 });
+
 router.get("/:infoHash/remove", function(req, res) { 
- removeEngine(req.params.infoHash); 
- res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
+    removeEngine(req.params.infoHash); 
+    res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
 });
 router.get("/removeAll", function(req, res) { 
-  for (ih in engines) removeEngine(ih);
-  res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
+    for (ih in engines) removeEngine(ih);
+    res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
 });
 
 router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
