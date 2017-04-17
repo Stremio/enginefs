@@ -206,10 +206,12 @@ router.all("/create", function(req, res) {
     fs.readFile(req.body.from, function(err, file) {
         if (err) return onErr(err)
 
-        var ih = null;
+        var ih = null
+        var parsed = null
+
         try {
-            var parsed = parseTorrentFile(file)
-            ih = parsed.infoHash.toLowerCase();
+            parsed = parseTorrentFile(file)
+            ih = parsed.infoHash.toLowerCase()
         } catch(e) { return onErr(e) }
 
         createEngine(ih, { torrent: parsed }, function(err, res) { 
