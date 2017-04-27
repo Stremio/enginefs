@@ -321,7 +321,7 @@ function sendCORSHeaders(req, res, next)
     // before allowing additional requests.
 
     if (req.method === 'OPTIONS' && req.headers.origin) {
-        res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+        res.setHeader('Access-Control-Allow-Origin', '*';
         res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || 'Range');
         res.setHeader('Access-Control-Max-Age', '1728000');
@@ -331,7 +331,7 @@ function sendCORSHeaders(req, res, next)
     }
 
     if(req.headers.origin) {
-        res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+        res.setHeader('Access-Control-Allow-Origin', '*');
     }
 
     if (next) next();
