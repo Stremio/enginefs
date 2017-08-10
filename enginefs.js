@@ -393,10 +393,27 @@ function getStatistics(e, idx)
     };
     // TODO: better stream-specific data; e.g. download/uploaded should only be specific to this stream
     if (!isNaN(idx) && e.torrent && e.torrent.files[idx]) {
-        s.streamLen = e.torrent.files[idx].length;
-        s.streamName = e.torrent.files[idx].name;
+        util._extend(s, getStreamStats(e, e.torrent.files[idx]));
     };
     return s;
+}
+
+function getStreamStats(e, file) 
+{
+    var stats = { };
+
+    s.streamLen = file.length;
+    s.streamName = file.name;
+
+    var startPiece = (file.offset / e.torrent.pieceLength) | 0;
+    var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
+    var availablePieces = 0;
+    for (var i=startPiece; i<=endPiece; i++) if (e.bitfield.get(i)) availablePieces++;
+    var filePieces = Math.ceil(file.length / e.torrent.pieceLength);
+    
+    s.streamProgress = availablePieces/filePieces;
+
+    return stats;
 }
 
 
