@@ -402,8 +402,8 @@ function getStreamStats(e, file)
 {
     var stats = { };
 
-    s.streamLen = file.length;
-    s.streamName = file.name;
+    stats.streamLen = file.length;
+    stats.streamName = file.name;
 
     var startPiece = (file.offset / e.torrent.pieceLength) | 0;
     var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
@@ -411,7 +411,7 @@ function getStreamStats(e, file)
     for (var i=startPiece; i<=endPiece; i++) if (e.bitfield.get(i)) availablePieces++;
     var filePieces = Math.ceil(file.length / e.torrent.pieceLength);
     
-    s.streamProgress = availablePieces/filePieces;
+    stats.streamProgress = availablePieces/filePieces;
 
     return stats;
 }
