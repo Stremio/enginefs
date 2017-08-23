@@ -506,6 +506,7 @@ new Counter(EngineFS, "stream-created", "stream-cached", function(hash, idx) { r
 
 
 EngineFS.http = createServer;
+EngineFS.app = createApp;
 
 EngineFS.sendCORSHeaders = sendCORSHeaders;
 EngineFS.sendDLNAHeaders = sendDLNAHeaders;
