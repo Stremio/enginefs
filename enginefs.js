@@ -292,9 +292,8 @@ router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
 
 /* Front-end: HTTP
  */
-function createServer(port)
+function createApp()
 {
-    var http = require("http");
     var app = connect();
 
     app.use(function(req, res, next) { 
@@ -308,7 +307,13 @@ function createServer(port)
     app.use(externalRouter);
     app.use(router);
 
-    var server = http.createServer(app);
+    return app;
+};
+
+function createServer(port)
+{
+    var http = require("http");
+    var server = http.createServer(createApp()); 
     if (port) server.listen(port);
     return server;
 };
