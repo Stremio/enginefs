@@ -78,14 +78,10 @@ function createEngine(infoHash, options, cb)
 
     if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
     if (isNew && options.swarmCap) {
-     var updateSwarmCap = function() {
-         var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
-         if (e.swarm.downloadSpeed() > options.swarmCap.maxSpeed && unchoked > options.swarmCap.minPeers) e.swarm.pause();
-         else e.swarm.resume();
-     };
-     e.swarm.on("wire", updateSwarmCap);
-     e.swarm.on("wire-disconnect", updateSwarmCap);
-     e.on("download", updateSwarmCap);
+        var updater = updateSwarmCap.bind(null, e, options);
+        e.swarm.on("wire", updater);
+        e.swarm.on("wire-disconnect", updater);
+        e.on("download", updater);
     }
     if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
     
@@ -96,6 +92,15 @@ function createEngine(infoHash, options, cb)
     }
 
     e.ready(function() { EngineFS.emit("engine-ready:"+infoHash, e.torrent); EngineFS.emit("engine-ready", infoHash, e.torrent); })
+}
+
+function updateSwarmCap(e, options)
+{
+     var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
+     var primaryCond = e.swarm.downloadSpeed() > options.swarmCap.maxSpeed
+     var minPeerCond = unchoked > options.swarmCap.minPeers
+     if (primaryCond && minPeerCond) e.swarm.pause();
+     else e.swarm.resume();
 }
 
 function getEngine(infoHash) 
