@@ -78,7 +78,7 @@ function createEngine(infoHash, options, cb)
 
     if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
     if (isNew && options.swarmCap) {
-        var updater = updateSwarmCap.bind(null, e, options);
+        var updater = updateSwarmCap.bind(null, e, options.swarmCap);
         e.swarm.on("wire", updater);
         e.swarm.on("wire-disconnect", updater);
         e.on("download", updater);
@@ -94,13 +94,44 @@ function createEngine(infoHash, options, cb)
     e.ready(function() { EngineFS.emit("engine-ready:"+infoHash, e.torrent); EngineFS.emit("engine-ready", infoHash, e.torrent); })
 }
 
-function updateSwarmCap(e, options)
+function updateSwarmCap(e, opts)
 {
-     var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
-     var primaryCond = e.swarm.downloadSpeed() > options.swarmCap.maxSpeed
-     var minPeerCond = unchoked > options.swarmCap.minPeers
-     if (primaryCond && minPeerCond) e.swarm.pause();
-     else e.swarm.resume();
+    var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
+    var primaryCond = true
+
+    if (opts.maxSpeed) primaryCond = e.swarm.downloadSpeed() > opts.maxSpeed
+    if (opts.maxBuffer) primaryCond = calcBuffer(e) > opts.maxBuffer
+
+    var minPeerCond = unchoked > opts.minPeers
+
+    if (primaryCond && minPeerCond) e.swarm.pause()
+    else e.swarm.resume();
+}
+
+function calcBuffer(e) 
+{
+    // default is 0, so as to behave as if buffer is not filled
+    var buf = 0
+
+    var n = 0 // number of selections
+    var b = 0 // aggregate of all selection ratios
+
+    e.selection.forEach(function(sel) {
+        if (! (sel.readFrom > 0 && sel.selectTo > 0)) return
+
+        var bufferPieces = sel.selectTo - sel.readFrom  // desired buffer length
+        var prog = ( (sel.from + sel.offset) - sel.readFrom) / bufferPieces
+
+        b += prog
+        n++
+    })
+
+    if (n > 0) buf = b / n
+
+    // perhaps use debug() here ?
+    //console.log('buffer', buf)
+
+    return buf
 }
 
 function getEngine(infoHash) 
