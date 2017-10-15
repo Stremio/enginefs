@@ -99,6 +99,7 @@ function updateSwarmCap(e, opts)
     var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
     var primaryCond = true
 
+    // Policy note: maxBuffer simply overrides maxSpeed; we may consider adding a "primaryCond ||" on the second line, also factoring in maxSpeed
     if (opts.maxSpeed) primaryCond = e.swarm.downloadSpeed() > opts.maxSpeed
     if (opts.maxBuffer) primaryCond = calcBuffer(e) > opts.maxBuffer
 
