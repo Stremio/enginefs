@@ -391,6 +391,7 @@ function getStatistics(e, idx)
         
         sources: e.swarm.peerSearch && e.swarm.peerSearch.stats(),
         peerSearchRunning: e.swarm.peerSearch ? e.swarm.peerSearch.isRunning() : undefined,
+        peerSearchOpts: e.swarm.peerSearch.options,
             
         //dht: !!e.dht,
         //dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
