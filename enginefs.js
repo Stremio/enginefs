@@ -407,7 +407,6 @@ function getStatistics(e, idx)
         unique: Object.keys(e.swarm._peers).length,
 
         connectionTries: e.swarm.tries,
-        paused: e.swarm.paused,
         swarmPaused: e.swarm.paused,
         swarmConnections: e.swarm.connections.length,
         swarmSize: e.swarm.size,
