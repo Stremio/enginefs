@@ -193,6 +193,7 @@ router.get("/:infoHash/:idx/stats.json", function(req, res) { res.writeHead(200,
 router.get("/stats.json", function(req, res) { 
     res.writeHead(200, jsonHead);
     var stats = { };
+    if (req.url.match('sys=1')) stats['sys'] = { loadavg: os.loadavg(), cpus: os.cpus() }
     for (ih in engines) stats[ih] = getStatistics(engines[ih]);
     res.end(JSON.stringify(stats)); 
 });
