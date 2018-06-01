@@ -72,7 +72,6 @@ function createEngine(infoHash, options, cb)
     var isNew = !engines[infoHash];
     var e = engines[infoHash] = engines[infoHash] || EngineFS.engine(torrent, options);
     e.swarm.resume(); // In case it's paused
-
     if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
     if (isNew && options.swarmCap) {
      var updateSwarmCap = function() {
@@ -360,6 +359,8 @@ function getStatistics(e, idx)
     if (!e) return null;
     var s = {
         infoHash: e.infoHash,
+
+        name: e.torrent && e.torrent.name,
 
         peers: e.swarm.wires.length,
         unchoked: e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length,
