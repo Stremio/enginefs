@@ -72,16 +72,16 @@ function createEngine(infoHash, options, cb)
     var isNew = !engines[infoHash];
     var e = engines[infoHash] = engines[infoHash] || EngineFS.engine(torrent, options);
     e.swarm.resume(); // In case it's paused
+
+    // needed for stats
+    e.options = options; 
+
     if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
     if (isNew && options.swarmCap) {
-     var updateSwarmCap = function() {
-         var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
-         if (e.swarm.downloadSpeed() > options.swarmCap.maxSpeed && unchoked > options.swarmCap.minPeers) e.swarm.pause();
-         else e.swarm.resume();
-     };
-     e.swarm.on("wire", updateSwarmCap);
-     e.swarm.on("wire-disconnect", updateSwarmCap);
-     e.on("download", updateSwarmCap);
+        var updater = updateSwarmCap.bind(null, e, options.swarmCap);
+        e.swarm.on("wire", updater);
+        e.swarm.on("wire-disconnect", updater);
+        e.on("download", updater);
     }
     if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
     
@@ -92,6 +92,47 @@ function createEngine(infoHash, options, cb)
     }
 
     e.ready(function() { EngineFS.emit("engine-ready:"+infoHash, e.torrent); EngineFS.emit("engine-ready", infoHash, e.torrent); })
+}
+
+function updateSwarmCap(e, opts)
+{
+    var unchoked = e.swarm.wires.filter(function(peer) { return !peer.peerChoking }).length;
+    var primaryCond = true
+
+    // Policy note: maxBuffer simply overrides maxSpeed; we may consider adding a "primaryCond ||" on the second line, also factoring in maxSpeed
+    if (opts.maxSpeed) primaryCond = e.swarm.downloadSpeed() > opts.maxSpeed
+    if (opts.maxBuffer) primaryCond = calcBuffer(e) > opts.maxBuffer
+
+    var minPeerCond = unchoked > opts.minPeers
+
+    if (primaryCond && minPeerCond) e.swarm.pause()
+    else e.swarm.resume();
+}
+
+function calcBuffer(e) 
+{
+    // default is 0, so as to behave as if buffer is not filled
+    var buf = 0
+
+    var n = 0 // number of selections
+    var b = 0 // aggregate of all selection ratios
+
+    e.selection.forEach(function(sel) {
+        if (! (sel.readFrom > 0 && sel.selectTo > 0)) return
+
+        var bufferPieces = sel.selectTo - sel.readFrom  // desired buffer length
+        var prog = ( (sel.from + sel.offset) - sel.readFrom) / bufferPieces
+
+        b += prog
+        n++
+    })
+
+    if (n > 0) buf = b / n
+
+    // perhaps use debug() here ?
+    //console.log('buffer', buf)
+
+    return buf
 }
 
 function getEngine(infoHash) 
@@ -189,6 +230,7 @@ router.get("/:infoHash/:idx/stats.json", function(req, res) { res.writeHead(200,
 router.get("/stats.json", function(req, res) { 
     res.writeHead(200, jsonHead);
     var stats = { };
+    if (req.url.match('sys=1')) stats['sys'] = { loadavg: os.loadavg(), cpus: os.cpus() }
     for (ih in engines) stats[ih] = getStatistics(engines[ih]);
     res.end(JSON.stringify(stats)); 
 });
@@ -368,7 +410,6 @@ function getStatistics(e, idx)
         unique: Object.keys(e.swarm._peers).length,
 
         connectionTries: e.swarm.tries,
-        paused: e.swarm.paused,
         swarmPaused: e.swarm.paused,
         swarmConnections: e.swarm.connections.length,
         swarmSize: e.swarm.size,
@@ -392,6 +433,8 @@ function getStatistics(e, idx)
         
         sources: e.swarm.peerSearch && e.swarm.peerSearch.stats(),
         peerSearchRunning: e.swarm.peerSearch ? e.swarm.peerSearch.isRunning() : undefined,
+
+        opts: e.options,
             
         //dht: !!e.dht,
         //dhtPeers: e.dht ? Object.keys(e.dht.peers).length : null,
