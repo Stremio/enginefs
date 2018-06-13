@@ -262,7 +262,7 @@ router.all("/create", function(req, res) {
     })
 
     function onErr(err) {
-        res.writeHead(400, jsonHead)
+        res.writeHead(500)
         res.end()
         console.error(err)
     }
