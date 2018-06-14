@@ -4,6 +4,7 @@ var events = require("events");
 var path = require("path");
 var util = require("util");
 var fs = require("fs");
+var fetch = require("node-fetch");
 
 var connect = require("connect");
 var rangeParser = require("range-parser");
@@ -244,14 +245,27 @@ router.all("/:infoHash/create", function(req, res) {
 });
 
 router.all("/create", function(req, res) {
-    fs.readFile(req.body.from, function(err, file) {
+    var from = req.body.from
+    
+    if (typeof(from) !== 'string') return onErr()
+
+    if (from.indexOf('http') === 0) {
+        fetch(from).then(function(res) { return res.buffer() })
+        .then(function(buf) {
+            onBlob(null, buf)
+        }).catch(onErr)
+    } else {
+        fs.readFile(req.body.from, onBlob)
+    }
+
+    function onBlob(err, blob) {
         if (err) return onErr(err)
 
         var ih = null
         var parsed = null
 
         try {
-            parsed = parseTorrentFile(file)
+            parsed = parseTorrentFile(blob)
             ih = parsed.infoHash.toLowerCase()
         } catch(e) { return onErr(e) }
 
@@ -259,7 +273,7 @@ router.all("/create", function(req, res) {
             if (err) onErr(err)
             else onSuccess(res)
         })
-    })
+    }
 
     function onErr(err) {
         res.writeHead(500)

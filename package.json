@@ -12,6 +12,7 @@
     "body-parser": "1.x.x",
     "connect": "3.6.x",
     "mime": "^1.2.11",
+    "node-fetch": "^2.1.2",
     "parse-torrent-file": "4.0.x",
     "peer-search": "Ivshti/peer-search",
     "pump": "^1.0.0",
