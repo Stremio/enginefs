@@ -224,7 +224,7 @@ function openPath(path, cb)
 
 /* Basic routes
  */
-var jsonHead = { "Content-Type": "application/json" };
+var jsonHead = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*"};
 router.get("/favicon.ico", function(req, res) { res.writeHead(404, jsonHead); res.end() });
 router.get("/:infoHash/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash]))) });
 router.get("/:infoHash/:idx/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash], req.params.idx))) });
