@@ -224,7 +224,17 @@ function openPath(path, cb)
 
 /* Basic routes
  */
-var jsonHead = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+var jsonHead = { "Content-Type": "application/json" };
+router.use(function(req, res, next) { 
+   console.log('METHOD', req.method);
+   res.setHeader("Access-Control-Allow-Origin", "*");
+   if(req.method === 'HEAD' || req.method === 'OPTIONS') {
+      res.setHeader("Content-Type", "application/json");
+      res.end();
+   } else {
+      next();
+   }
+});
 router.get("/favicon.ico", function(req, res) { res.writeHead(404, jsonHead); res.end() });
 router.get("/:infoHash/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash]))) });
 router.get("/:infoHash/:idx/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash], req.params.idx))) });
