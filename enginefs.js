@@ -226,7 +226,6 @@ function openPath(path, cb)
  */
 var jsonHead = { "Content-Type": "application/json" };
 router.use(function(req, res, next) { 
-   console.log('METHOD', req.method);
    res.setHeader("Access-Control-Allow-Origin", "*");
    if(req.method === 'HEAD' || req.method === 'OPTIONS') {
       res.setHeader("Content-Type", "application/json");
