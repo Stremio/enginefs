@@ -527,8 +527,10 @@ EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(inf
      * fully commited to disk; make sure we do that by downloading the entire file in verified pieces 
      * 
      * Plus, we always guarantee we have the whole file requested
+     *
+     * The fallback to || e.torrent.pieceLength is there to make sure this works even with virtual pieces disabled
      */
-    var vLen = e.torrent.realPieceLength || e.torrent.verificationLen;
+    var vLen = e.torrent.realPieceLength || e.torrent.verificationLen || e.torrent.pieceLength;
     var startPiece = (file.offset / vLen) | 0;
     var endPiece = ((file.offset+file.length-1) / vLen) | 0;
     var ratio = vLen / e.torrent.pieceLength;
