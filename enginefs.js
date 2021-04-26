@@ -80,6 +80,8 @@ function createEngine(infoHash, options, cb)
     if (isNew && options.peerSearch) {
         var peerSources = []
 
+        // torrent can be an object or a string and we need this to be foolproof, the only way
+        // this condition will fail is if torrent.announce is a string, which should not be possible
         if (((torrent || {}).announce || []).length) {
             peerSources = peerSources
                             .concat(torrent.announce)
