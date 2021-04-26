@@ -77,7 +77,21 @@ function createEngine(infoHash, options, cb)
     // needed for stats
     e.options = options; 
 
-    if (isNew && options.peerSearch) new PeerSearch(options.peerSearch.sources, e.swarm, options.peerSearch);
+    if (isNew && options.peerSearch) {
+        var peerSources = []
+
+        // torrent can be an object or a string and we need this to be foolproof, the only way
+        // this condition will fail is if torrent.announce is a string, which should not be possible
+        if (((torrent || {}).announce || []).length) {
+            peerSources = peerSources
+                            .concat(torrent.announce)
+                            .map(function(src) { return 'tracker:' + src })
+                            .concat('dht:' + infoHash)
+        } else
+            peerSources = options.peerSearch.sources
+
+        new PeerSearch(peerSources, e.swarm, options.peerSearch);
+    }
     if (isNew && options.swarmCap) {
         var updater = updateSwarmCap.bind(null, e, options.swarmCap);
         e.swarm.on("wire", updater);
