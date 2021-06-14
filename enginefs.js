@@ -213,10 +213,19 @@ function openPath(path, cb)
         var infoHash = parts[0].toLowerCase();
         var i = Number(parts[1]);
 
-        if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index"));
-        
         createEngine(infoHash, function(err, engine)
         {
+            if (isNaN(i)) {
+                // presume use of filename in path
+                engine.files.some(function(file, idx) {
+                  if (parts[1] === file.name) {
+                    i = idx;
+                    return true;
+                  }
+                })
+                if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index or file name"));
+            }
+
             if (err) return cb(err);
             if (! engine.files[i]) return cb(new Error("Torrent does not contain file with index "+i));
             
@@ -316,6 +325,12 @@ router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
     openPath(u.pathname, function(err, handle, e)
     {
         if (err) { console.error(err); res.statusCode = 500; return res.end(); }
+
+        if (u.query.external) {
+            res.statusCode = 307;
+            res.setHeader("Location", "/" + e.infoHash + "/" + handle.name);
+            return res.end();
+        }
         
         // Handle LinvoFS events
         EngineFS.emit("stream-open", e.infoHash, e.files.indexOf(handle));
