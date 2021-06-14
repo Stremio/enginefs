@@ -215,6 +215,8 @@ function openPath(path, cb)
 
         createEngine(infoHash, function(err, engine)
         {
+            if (err) return cb(err);
+
             if (isNaN(i)) {
                 // presume use of filename in path
                 engine.files.some(function(file, idx) {
@@ -226,7 +228,6 @@ function openPath(path, cb)
                 if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index or file name"));
             }
 
-            if (err) return cb(err);
             if (! engine.files[i]) return cb(new Error("Torrent does not contain file with index "+i));
             
             cb(null, engine.files[i], engine);
