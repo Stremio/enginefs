@@ -219,8 +219,9 @@ function openPath(path, cb)
 
             if (isNaN(i)) {
                 // presume use of filename in path
+                var name = decodeURIComponent(parts[1])
                 engine.files.some(function(file, idx) {
-                  if (parts[1] === file.name) {
+                  if (name === file.name) {
                     i = idx;
                     return true;
                   }
@@ -329,7 +330,7 @@ router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
 
         if (u.query.external) {
             res.statusCode = 307;
-            res.setHeader("Location", "/" + e.infoHash + "/" + handle.name);
+            res.setHeader("Location", "/" + e.infoHash + "/" + encodeURIComponent(handle.name));
             return res.end();
         }
         
@@ -603,6 +604,7 @@ EngineFS.sendDLNAHeaders = sendDLNAHeaders;
 
 EngineFS.create = createEngine;
 EngineFS.exists = existsEngine;
+EngineFS.get = getEngine;
 EngineFS.remove = removeEngine;
 EngineFS.settings = settingsEngine;
 EngineFS.stats = statsEngine;
