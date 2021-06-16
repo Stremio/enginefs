@@ -150,6 +150,14 @@ function calcBuffer(e)
     return buf
 }
 
+function getFilename(infoHash, fileIdx)
+{
+    if (existsEngine(infoHash))
+        return (getEngine(infoHash).files[fileIdx] || {}).name
+
+    return false
+}
+
 function getEngine(infoHash) 
 {
     return engines[infoHash.toLowerCase()]; 
@@ -604,7 +612,7 @@ EngineFS.sendDLNAHeaders = sendDLNAHeaders;
 
 EngineFS.create = createEngine;
 EngineFS.exists = existsEngine;
-EngineFS.get = getEngine;
+EngineFS.getFilename = getFilename;
 EngineFS.remove = removeEngine;
 EngineFS.settings = settingsEngine;
 EngineFS.stats = statsEngine;
