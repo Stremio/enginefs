@@ -338,7 +338,7 @@ router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
 
         if (u.query.external) {
             res.statusCode = 307;
-            res.setHeader("Location", "/" + e.infoHash + "/" + encodeURIComponent(handle.name));
+            res.setHeader("Location", "/" + e.infoHash + "/" + encodeURIComponent(handle.name) + (u.query.download ? '?download=1' : ''));
             return res.end();
         }
         
@@ -362,6 +362,7 @@ router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
         res.setHeader("Accept-Ranges", "bytes");
         res.setHeader("Content-Type", mime.lookup(handle.name));
         res.setHeader("Cache-Control", "max-age=0, no-cache");
+        if (u.query.download) res.setHeader("Content-Disposition", 'attachment; filename="'+handle.name+'";');
         if (u.query.subtitles) res.setHeader("CaptionInfo.sec", u.query.subtitles);
 
         //res.setHeader("Access-Control-Max-Age", "1728000");
