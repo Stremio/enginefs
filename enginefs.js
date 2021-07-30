@@ -362,7 +362,7 @@ router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
         res.setHeader("Accept-Ranges", "bytes");
         res.setHeader("Content-Type", mime.lookup(handle.name));
         res.setHeader("Cache-Control", "max-age=0, no-cache");
-        if (u.query.download) res.setHeader("Content-Disposition", "attachment; filename="+handle.name+";");
+        if (u.query.download) res.setHeader("Content-Disposition", 'attachment; filename="'+handle.name+'";');
         if (u.query.subtitles) res.setHeader("CaptionInfo.sec", u.query.subtitles);
 
         //res.setHeader("Access-Control-Max-Age", "1728000");
