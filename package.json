@@ -12,7 +12,7 @@
     "body-parser": "1.x.x",
     "connect": "3.6.x",
     "mime": "^1.2.11",
-    "node-fetch": "^2.1.2",
+    "node-fetch": "^3.1.1",
     "parse-torrent-file": "4.0.x",
     "peer-search": "git+ssh://git@github.com/Ivshti/peer-search#275bd3e2a733ac6e8edabae792b26b2b4c4434e4",
     "pump": "^1.0.0",
