@@ -278,7 +278,7 @@ router.all("/:infoHash/create", function(req, res) {
     createEngine(ih, body, function() {
         res.writeHead(200, jsonHead);
         var engineStats = getStatistics(engines[ih])
-        if (body.guessFileIdx && engine.files) {
+        if (body.guessFileIdx && engineStats.files) {
             // we don't have a default file idx
             // so we will guess it for the clients
             engineStats.guessedFileIdx = GuessFileIdx(engineStats.files, body.guessFileIdx)
