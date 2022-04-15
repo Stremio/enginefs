@@ -333,18 +333,12 @@ router.get("/removeAll", function(req, res) {
 router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
     var u = url.parse(req.url, true);
     var options = {};
-    if (req.query.sources && typeof req.query.min === 'string' && typeof req.query.max === 'string') {
-        options.peerSearch = {
-            min: parseInt(req.query.min, 10),
-            max: parseInt(req.query.max, 10),
-            sources: Array.isArray(req.query.sources) ?
-                req.query.sources
-                :
-                typeof req.query.sources === 'string' ?
-                    [req.query.sources]
-                    :
-                    []
-        };
+    if (typeof req.query.peerSearch === 'string') {
+        try {
+            options.peerSearch = JSON.parse(req.query.peerSearch);
+        } catch (error) {
+            console.error(error);
+        }
     }
     openPath(u.pathname, options, function(err, handle, e)
     {
