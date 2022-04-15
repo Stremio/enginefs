@@ -337,7 +337,7 @@ router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
         try {
             options.peerSearch = JSON.parse(req.query.peerSearch);
         } catch (error) {
-            console.error(error);
+            console.error('Failed to parse peerSearch param', error);
         }
     }
     openPath(u.pathname, options, function(err, handle, e)
