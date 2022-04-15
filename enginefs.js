@@ -44,9 +44,11 @@ EngineFS.ENGINE_TIMEOUT = 60*1000;
 
 var engines = { };
 
+var DEFAULT_PEER_SEARCH_MIN = 40;
+var DEFAULT_PEER_SEARCH_MAX = 200;
 EngineFS.getDefaults = function(ih) {
     return {
-        peerSearch: { min: 40, max: 200, sources: [ "dht:"+ih ] },
+        peerSearch: { min: DEFAULT_PEER_SEARCH_MIN, max: DEFAULT_PEER_SEARCH_MAX, sources: [ "dht:"+ih ] },
         dht: false, tracker: false, // LEGACY ARGS, disable because we use peerSearch
     }
 };
@@ -333,10 +335,10 @@ router.get("/removeAll", function(req, res) {
 router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
     var u = url.parse(req.url, true);
     var options = {};
-    if (req.query.sources && typeof req.query.min === 'string' && typeof req.query.max === 'string') {
+    if (req.query.sources) {
         options.peerSearch = {
-            min: parseInt(req.query.min, 10),
-            max: parseInt(req.query.max, 10),
+            min: parseInt(req.query.min, 10) | DEFAULT_PEER_SEARCH_MIN,
+            max: parseInt(req.query.max, 10) | DEFAULT_PEER_SEARCH_MAX,
             sources: Array.isArray(req.query.sources) ?
                 req.query.sources
                 :
