@@ -212,7 +212,7 @@ function prewarmStream(hash, idx)
     if (engines[hash]) engines[hash].ready(function() { engines[hash].files[idx].select() }); // select without priority so we start downloading
 };
 
-function openPath(path, cb)
+function openPath(path, options, cb)
 {
     // length: 40 ; info hash
     var parts = path.split("/").filter(function(x) { return x });
@@ -221,7 +221,7 @@ function openPath(path, cb)
         var infoHash = parts[0].toLowerCase();
         var i = Number(parts[1]);
 
-        createEngine(infoHash, function(err, engine)
+        createEngine(infoHash, options, function(err, engine)
         {
             if (err) return cb(err);
 
@@ -332,7 +332,15 @@ router.get("/removeAll", function(req, res) {
 
 router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
     var u = url.parse(req.url, true);
-    openPath(u.pathname, function(err, handle, e)
+    var options = {};
+    if (typeof req.query.peerSearch === 'string') {
+        try {
+            options.peerSearch = JSON.parse(req.query.peerSearch);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    openPath(u.pathname, options, function(err, handle, e)
     {
         if (err) { console.error(err); res.statusCode = 500; return res.end(); }
 
