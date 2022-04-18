@@ -21,6 +21,8 @@ var EngineFS =  new events.EventEmitter();
 
 var Counter = require("./lib/refcounter");
 
+var GuessFileIdx = require("./lib/guessFileIdx")
+
 var IH_REGEX = new RegExp("([0-9A-Fa-f]){40}", "g");
 
 // Events:
@@ -272,9 +274,16 @@ router.get("/stats.json", function(req, res) {
 
 router.all("/:infoHash/create", function(req, res) {
     var ih = req.params.infoHash.toLowerCase();
-    createEngine(ih, req.body || { }, function() {
+    var body = req.body || { }
+    createEngine(ih, body, function() {
         res.writeHead(200, jsonHead);
-        res.end(JSON.stringify(getStatistics(engines[ih])));
+        var engineStats = getStatistics(engines[ih])
+        if (body.guessFileIdx && engineStats.files) {
+            // we don't have a default file idx
+            // so we will guess it for the clients
+            engineStats.guessedFileIdx = GuessFileIdx(engineStats.files, body.guessFileIdx)
+        }
+        res.end(JSON.stringify(engineStats));
     });
 });
 
