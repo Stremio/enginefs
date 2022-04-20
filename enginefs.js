@@ -226,7 +226,7 @@ function openPath(path, trackers, cb)
         var opts = {}
 
         if (trackers)
-            opts.peerSearch = { min: 40, max: 200, sources: [ "dht:"+ih ].concat(trackers) }
+            opts.peerSearch = { min: 40, max: 200, sources: [ "dht:"+infoHash ].concat(trackers) }
 
         createEngine(infoHash, opts, function(err, engine)
         {
