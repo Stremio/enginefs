@@ -225,8 +225,14 @@ function openPath(path, trackers, cb)
 
         var opts = {}
 
-        if (trackers)
-            opts.peerSearch = { min: 40, max: 200, sources: trackers }
+        if (trackers) {
+            const defaults = EngineFS.getDefaults(infoHash)
+            opts.peerSearch = {
+                min: defaults.peerSearch.min,
+                max: defaults.peerSearch.max,
+                sources: trackers
+            }
+        }
 
         createEngine(infoHash, opts, function(err, engine)
         {
