@@ -300,16 +300,21 @@ router.all("/:infoHash/create", function(req, res) {
 
 router.all("/create", function(req, res) {
     var from = req.body.from
+    var blob = req.body.blob
     
-    if (typeof(from) !== 'string') return onErr()
-
-    if (from.indexOf('http') === 0) {
-        fetch(from).then(function(res) { return res.buffer() })
-        .then(function(buf) {
-            onBlob(null, buf)
-        }).catch(onErr)
+    if (typeof(blob) === 'string') {
+        onBlob(null, Buffer.from(blob, 'hex'))
     } else {
-        fs.readFile(req.body.from, onBlob)
+        if (typeof(from) !== 'string') return onErr()
+
+        if (from.indexOf('http') === 0) {
+            fetch(from).then(function(res) { return res.buffer() })
+            .then(function(buf) {
+                onBlob(null, buf)
+            }).catch(onErr)
+        } else {
+            fs.readFile(req.body.from, onBlob)
+        }
     }
 
     function onBlob(err, blob) {
@@ -418,7 +423,8 @@ function createApp()
         if (EngineFS.loggingEnabled) console.log("-> "+req.method+" "+url.parse(req.url).path+" "+(req.headers["range"] || "")); next();
     });
 
-    app.use(bodyParser.json());
+    // becauce of /create blob body
+    app.use(bodyParser.json({ limit: '3mb' }));
     app.use(bodyParser.urlencoded({ extended: true }));
     app.use(externalRouter);
     app.use(router);
