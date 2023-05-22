@@ -221,7 +221,7 @@ function openPath(path, trackers, cb)
     if (parts[0] && parts[0].match(IH_REGEX))
     {
         var infoHash = parts[0].toLowerCase();
-        var i = Number(parts[1]);
+        var i = Number(parts[1] || -1);
 
         var opts = {}
 
@@ -248,6 +248,13 @@ function openPath(path, trackers, cb)
                   }
                 })
                 if (isNaN(i)) return cb(new Error("Cannot parse path: info hash received, but invalid file index or file name"));
+            } else if (i === -1) {
+                var engineStats = getStatistics(engine)
+                if (engineStats.files) {
+                    // we don't have a default file idx
+                    // so we will guess it for the clients
+                    i = GuessFileIdx(engineStats.files, {})
+                }
             }
 
             if (! engine.files[i]) return cb(new Error("Torrent does not contain file with index "+i));
@@ -355,7 +362,7 @@ router.get("/removeAll", function(req, res) {
     res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
 });
 
-router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
+function handleTorrent(req, res, next) {
     var u = url.parse(req.url, true);
     var trackers = u.query.tr && [].concat(u.query.tr)
     openPath(u.pathname, trackers, function(err, handle, e)
@@ -415,7 +422,13 @@ router.get("/:infoHash/:idx", sendDLNAHeaders, function(req, res, next) {
         if (req.method === "HEAD") return res.end();
         pump(handle.createReadStream(util._extend(range, opts)), res);  
     });
-});
+}
+
+router.get("/:infoHash/:idx", sendDLNAHeaders, handleTorrent);
+
+router.get("/:infoHash/:idx/*", sendDLNAHeaders, handleTorrent);
+
+router.get("/:infoHash", sendDLNAHeaders, handleTorrent);
 
 /* Front-end: HTTP
  */
