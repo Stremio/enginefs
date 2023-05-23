@@ -428,8 +428,6 @@ router.get("/:infoHash/:idx", sendDLNAHeaders, handleTorrent);
 
 router.get("/:infoHash/:idx/*", sendDLNAHeaders, handleTorrent);
 
-router.get("/:infoHash", sendDLNAHeaders, handleTorrent);
-
 /* Front-end: HTTP
  */
 function createApp()
