@@ -391,11 +391,6 @@ function handleTorrent(req, res, next) {
         //req.connection.setTimeout(0);
 
         var range = req.headers.range;
-        if (range && range.endsWith('-')) {
-           var defaults = EngineFS.getDefaults(e.infoHash);
-           if (!defaults.circularBuffer || defaults.circularBuffer.type === 'fs')
-              prewarmStream(e.infoHash, e.files.indexOf(handle));
-        }
         range = range && rangeParser(handle.length, range)[0];
         res.setHeader("Accept-Ranges", "bytes");
         res.setHeader("Content-Type", mime.lookup(handle.name));
