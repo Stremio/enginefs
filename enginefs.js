@@ -59,7 +59,7 @@ EngineFS.getCachePath = function(ih) {
     return path.join(os.tmpdir(), ih);
 };
 
-EngineFS.adaptCacheForTv = function(hash, cb) {
+EngineFS.beforeCreateEngine = function(hash, cb) {
     cb()
 };
 
@@ -67,7 +67,7 @@ function createEngine(infoHash, options, cb)
 {
     // this is used to adapt the options for
     // fs cache when using tv env
-    EngineFS.adaptCacheForTv(infoHash, function() {
+    EngineFS.beforeCreateEngine(infoHash, function() {
         if (! EngineFS.engine) throw new Error("EngineFS requires EngineFS.engine to point to engine constructor");
 
         if (typeof(options) === "function") { cb = options; options = null; }
