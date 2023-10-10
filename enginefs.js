@@ -46,6 +46,8 @@ EngineFS.ENGINE_TIMEOUT = 60*1000;
 
 var engines = { };
 
+// next 3 methods are overwritten in stremio-server/init.js
+
 EngineFS.getDefaults = function(ih) {
     return {
         peerSearch: { min: 40, max: 200, sources: [ "dht:"+ih ] },
@@ -57,58 +59,66 @@ EngineFS.getCachePath = function(ih) {
     return path.join(os.tmpdir(), ih);
 };
 
+EngineFS.beforeCreateEngine = function(hash, cb) {
+    cb()
+};
+
 function createEngine(infoHash, options, cb)
 {
-    if (! EngineFS.engine) throw new Error("EngineFS requires EngineFS.engine to point to engine constructor");
+    // this is used to adapt the options for
+    // fs cache when using tv env
+    EngineFS.beforeCreateEngine(infoHash, function() {
+        if (! EngineFS.engine) throw new Error("EngineFS requires EngineFS.engine to point to engine constructor");
 
-    if (typeof(options) === "function") { cb = options; options = null; }
-    cb = cb || function() { };
-    EngineFS.once("engine-ready:"+infoHash, function() { cb(null, engines[infoHash]) });
+        if (typeof(options) === "function") { cb = options; options = null; }
+        cb = cb || function() { };
+        EngineFS.once("engine-ready:"+infoHash, function() { cb(null, engines[infoHash]) });
 
-    options = util._extend(EngineFS.getDefaults(infoHash), options || { });
-    options.path = options.path || EngineFS.getCachePath(infoHash);
+        options = util._extend(EngineFS.getDefaults(infoHash), options || { });
+        options.path = options.path || EngineFS.getCachePath(infoHash);
 
-    Emit(["engine-create", infoHash, options]);
-    
-    var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
+        Emit(["engine-create", infoHash, options]);
+        
+        var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
-    var isNew = !engines[infoHash];
-    var e = engines[infoHash] = engines[infoHash] || EngineFS.engine(torrent, options);
-    e.swarm.resume(); // In case it's paused
+        var isNew = !engines[infoHash];
+        var e = engines[infoHash] = engines[infoHash] || EngineFS.engine(torrent, options);
+        e.swarm.resume(); // In case it's paused
 
-    // needed for stats
-    e.options = options; 
+        // needed for stats
+        e.options = options; 
 
-    if (isNew && options.peerSearch) {
-        var peerSources = []
+        if (isNew && options.peerSearch) {
+            var peerSources = []
 
-        // torrent can be an object or a string and we need this to be foolproof, the only way
-        // this condition will fail is if torrent.announce is a string, which should not be possible
-        if (((torrent || {}).announce || []).length) {
-            peerSources = peerSources
-                            .concat(torrent.announce)
-                            .map(function(src) { return 'tracker:' + src })
-                            .concat('dht:' + infoHash)
-        } else
-            peerSources = options.peerSearch.sources
+            // torrent can be an object or a string and we need this to be foolproof, the only way
+            // this condition will fail is if torrent.announce is a string, which should not be possible
+            if (((torrent || {}).announce || []).length) {
+                peerSources = peerSources
+                                .concat(torrent.announce)
+                                .map(function(src) { return 'tracker:' + src })
+                                .concat('dht:' + infoHash)
+            } else
+                peerSources = options.peerSearch.sources
 
-        new PeerSearch(peerSources, e.swarm, options.peerSearch);
-    }
-    if (isNew && options.swarmCap) {
-        var updater = updateSwarmCap.bind(null, e, options.swarmCap);
-        e.swarm.on("wire", updater);
-        e.swarm.on("wire-disconnect", updater);
-        e.on("download", updater);
-    }
-    if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
-    
-    if (isNew) {
-        e.on("error", function(err) { EngineFS.emit("engine-error:"+infoHash, err); EngineFS.emit("engine-error", infoHash, err); });    
-        e.on("invalid-piece", function(p) { EngineFS.emit("engine-invalid-piece:"+infoHash, p); EngineFS.emit("engine-invalid-piece", infoHash, p); });    
-        Emit(["engine-created", infoHash]);
-    }
+            new PeerSearch(peerSources, e.swarm, options.peerSearch);
+        }
+        if (isNew && options.swarmCap) {
+            var updater = updateSwarmCap.bind(null, e, options.swarmCap);
+            e.swarm.on("wire", updater);
+            e.swarm.on("wire-disconnect", updater);
+            e.on("download", updater);
+        }
+        if (options.growler && e.setFloodedPulse) e.setFloodedPulse(options.growler.flood, options.growler.pulse);
+        
+        if (isNew) {
+            e.on("error", function(err) { EngineFS.emit("engine-error:"+infoHash, err); EngineFS.emit("engine-error", infoHash, err); });    
+            e.on("invalid-piece", function(p) { EngineFS.emit("engine-invalid-piece:"+infoHash, p); EngineFS.emit("engine-invalid-piece", infoHash, p); });    
+            Emit(["engine-created", infoHash]);
+        }
 
-    e.ready(function() { EngineFS.emit("engine-ready:"+infoHash, e.torrent); EngineFS.emit("engine-ready", infoHash, e.torrent); })
+        e.ready(function() { EngineFS.emit("engine-ready:"+infoHash, e.torrent); EngineFS.emit("engine-ready", infoHash, e.torrent); })
+    })
 }
 
 function updateSwarmCap(e, opts)
