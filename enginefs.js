@@ -175,6 +175,11 @@ function getEngine(infoHash)
     return engines[infoHash.toLowerCase()]; 
 }
 
+function getSelections(infoHash)
+{
+    return (engines[infoHash.toLowerCase()] || {}).selection || []
+}
+
 function existsEngine(infoHash)
 {
     return !!engines[infoHash.toLowerCase()]; 
@@ -671,6 +676,7 @@ EngineFS.remove = removeEngine;
 EngineFS.settings = settingsEngine;
 EngineFS.stats = statsEngine;
 EngineFS.list = listEngines;
+EngineFS.getSelections = getSelections;
 
 EngineFS.prewarmStream = prewarmStream;
 
