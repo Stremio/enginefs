@@ -76,6 +76,7 @@ function createEngine(infoHash, options, cb)
 
         options = util._extend(EngineFS.getDefaults(infoHash), options || { });
         options.path = options.path || EngineFS.getCachePath(infoHash);
+        options.id = EngineFS.peerId;
 
         Emit(["engine-create", infoHash, options]);
         
