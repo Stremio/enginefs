@@ -23,6 +23,8 @@ var Counter = require("./lib/refcounter");
 
 var GuessFileIdx = require("./lib/guessFileIdx")
 
+var spoofedPeerId = require("./lib/spoofPeerId")
+
 var IH_REGEX = new RegExp("([0-9A-Fa-f]){40}", "g");
 
 // Events:
@@ -80,6 +82,8 @@ function createEngine(infoHash, options, cb)
         Emit(["engine-create", infoHash, options]);
         
         var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
+
+        options.id = spoofedPeerId()
 
         var isNew = !engines[infoHash];
         var e = engines[infoHash] = engines[infoHash] || EngineFS.engine(torrent, options);
