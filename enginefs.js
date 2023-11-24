@@ -184,11 +184,17 @@ function existsEngine(infoHash)
     return !!engines[infoHash.toLowerCase()]; 
 }
 
-function removeEngine(infoHash)
+function removeEngine(infoHash, cb)
 {
-    if (!engines[infoHash]) return;
-    engines[infoHash].destroy(function() { Emit(["engine-destroyed", infoHash]) });
-    delete engines[infoHash];
+    if (!existsEngine(infoHash)) {
+        if (cb) cb()
+        return;
+    }
+    engines[infoHash.toLowerCase()].destroy(function() {
+        Emit(["engine-destroyed", infoHash])
+        delete engines[infoHash.toLowerCase()];
+        if (cb) cb();
+    });
 }
 
 function settingsEngine(infoHash, settings) 
@@ -368,8 +374,9 @@ router.all("/create", function(req, res) {
 });
 
 router.get("/:infoHash/remove", function(req, res) { 
-    removeEngine(req.params.infoHash); 
-    res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
+    removeEngine(req.params.infoHash, function() {
+        res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
+    }); 
 });
 router.get("/removeAll", function(req, res) { 
     for (ih in engines) removeEngine(ih);
