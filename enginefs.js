@@ -174,6 +174,11 @@ function getFilename(infoHash, fileIdx)
     return false
 }
 
+function getSelections(infoHash)
+{
+    return (engines[infoHash.toLowerCase()] || {}).selection || []
+}
+
 function getEngine(infoHash) 
 {
     return engines[infoHash.toLowerCase()]; 
@@ -222,6 +227,26 @@ function statsEngine(infoHash, idx)
 function listEngines()
 {
     return Object.keys(engines);
+}
+
+function keepConcurrency(hash, concurrency) {
+    const enginesCount = listEngines().length +1 // math in future engine
+    if (!concurrency || enginesCount <= concurrency) return Promise.resolve()
+    console.log('keep concurrency')
+    const filteredEngines = listEngines().filter(ih => (ih.toLowerCase() !== hash.toLowerCase() && getSelections(ih).length === 0));
+
+    const enginesToRemove = filteredEngines.slice(0, enginesCount - concurrency);
+
+    if (!enginesToRemove.length) return Promise.resolve()
+    return new Promise((resolve) => {
+        enginesToRemove.forEach((ih, idx) => {
+            console.log(`remove engine ${ih}`)
+            removeEngine(ih, () => {
+                if (idx === enginesToRemove.length -1)
+                    resolve();
+            });
+        });
+    });
 }
 
 var router = Router();
@@ -682,6 +707,8 @@ EngineFS.remove = removeEngine;
 EngineFS.settings = settingsEngine;
 EngineFS.stats = statsEngine;
 EngineFS.list = listEngines;
+EngineFS.getSelections = getSelections;
+EngineFS.keepConcurrency = keepConcurrency;
 
 EngineFS.prewarmStream = prewarmStream;
 
