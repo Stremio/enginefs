@@ -232,7 +232,7 @@ function listEngines()
 function keepConcurrency(hash, concurrency) {
     const enginesCount = listEngines().length +1 // math in future engine
     if (!concurrency || enginesCount <= concurrency) return Promise.resolve()
-    console.log('keep concurrency')
+    console.log('keep concurrency', concurrency)
     const filteredEngines = listEngines().filter(ih => (ih.toLowerCase() !== hash.toLowerCase() && getSelections(ih).length === 0));
 
     const enginesToRemove = filteredEngines.slice(0, enginesCount - concurrency);
