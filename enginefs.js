@@ -684,17 +684,17 @@ new Counter(EngineFS, "stream-open", "stream-close", function(hash, idx) { retur
     Emit(["stream-active",hash,idx])
 }, function(hash, idx) {  
     Emit(["stream-inactive",hash,idx])
-}, EngineFS.STREAM_TIMEOUT);
+}, function() { EngineFS.STREAM_TIMEOUT });
 
 new Counter(EngineFS, "stream-open", "stream-close", function(hash, idx) { return hash }, function(hash) {
     Emit(["engine-active",hash]);
 }, function(hash) {  
     Emit(["engine-inactive",hash]);
-}, EngineFS.ENGINE_TIMEOUT); // Keep engines active for STREAM_TIMEOUT * 60
+}, function() { EngineFS.ENGINE_TIMEOUT }); // Keep engines active for STREAM_TIMEOUT * 60
 
 new Counter(EngineFS, "stream-created", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
     Emit(["engine-idle",hash]);
-}, EngineFS.STREAM_TIMEOUT);
+}, function() { EngineFS.STREAM_TIMEOUT });
 
 
 EngineFS.http = createServer;
