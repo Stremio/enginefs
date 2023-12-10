@@ -683,17 +683,20 @@ function Emit(args)
 new Counter(EngineFS, "stream-open", "stream-close", function(hash, idx) { return hash+":"+idx }, function(hash, idx) { 
     Emit(["stream-active",hash,idx])
 }, function(hash, idx) {  
-    Emit(["stream-inactive",hash,idx])
+    if (existsEngine(hash))
+        Emit(["stream-inactive",hash,idx])
 }, function() { EngineFS.STREAM_TIMEOUT });
 
 new Counter(EngineFS, "stream-open", "stream-close", function(hash, idx) { return hash }, function(hash) {
     Emit(["engine-active",hash]);
 }, function(hash) {  
-    Emit(["engine-inactive",hash]);
+    if (existsEngine(hash))
+        Emit(["engine-inactive",hash]);
 }, function() { EngineFS.ENGINE_TIMEOUT }); // Keep engines active for STREAM_TIMEOUT * 60
 
 new Counter(EngineFS, "stream-created", "stream-cached", function(hash, idx) { return hash }, function() { }, function(hash) {  
-    Emit(["engine-idle",hash]);
+    if (existsEngine(hash))
+        Emit(["engine-idle",hash]);
 }, function() { EngineFS.STREAM_TIMEOUT });
 
 
