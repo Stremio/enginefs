@@ -27,8 +27,6 @@ var spoofedPeerId = require("./lib/spoofPeerId")
 
 var IH_REGEX = new RegExp("([0-9A-Fa-f]){40}", "g");
 
-EngineFS.SPOOF_PEER_ID = false; 
-
 // Events:
 // stream-open
 // stream-close
@@ -85,8 +83,7 @@ function createEngine(infoHash, options, cb)
         
         var torrent = options.torrent || "magnet:?xt=urn:btih:"+infoHash;
 
-        if (EngineFS.SPOOF_PEER_ID)
-            options.id = spoofedPeerId()
+        options.id = spoofedPeerId()
 
         var isNew = !engines[infoHash];
         var e = engines[infoHash] = engines[infoHash] || EngineFS.engine(torrent, options);
