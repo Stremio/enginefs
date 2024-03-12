@@ -18,7 +18,7 @@
     "pump": "^1.0.0",
     "range-parser": "^1.0.0",
     "router": "1.3.x",
-    "video-name-parser": "1.4.6",
+    "video-name-parser": "1.4.7",
     "hat": "0.0.3"
   }
 }
