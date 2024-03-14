@@ -25,6 +25,8 @@ var GuessFileIdx = require("./lib/guessFileIdx")
 
 var spoofedPeerId = require("./lib/spoofPeerId")
 
+var safeStatelessRegex = require('safe-stateless-regex')
+
 var IH_REGEX = new RegExp("([0-9A-Fa-f]){40}", "g");
 
 // Events:
@@ -259,7 +261,7 @@ function prewarmStream(hash, idx)
     if (engines[hash]) engines[hash].ready(function() { engines[hash].files[idx].select() }); // select without priority so we start downloading
 };
 
-function openPath(path, trackers, cb)
+function openPath(path, trackers, fileMustInclude, cb)
 {
     // length: 40 ; info hash
     var parts = path.split("/").filter(function(x) { return x });
@@ -282,6 +284,20 @@ function openPath(path, trackers, cb)
         createEngine(infoHash, opts, function(err, engine)
         {
             if (err) return cb(err);
+
+            if ((fileMustInclude || []).length) {
+                // we prefer fileMustInclude over fileIdx
+                engine.files.find(function(file, idx) {
+                    return !!fileMustInclude.find(function(reg) {
+                        reg = typeof reg === 'string' ? new RegExp(reg) : reg
+                        if (safeStatelessRegex(file.name, reg, 500)) {
+                            i = idx
+                            return true
+                        }
+                        return false
+                    })
+                })
+            }
 
             if (isNaN(i)) {
                 // presume use of filename in path
@@ -341,10 +357,34 @@ router.all("/:infoHash/create", function(req, res) {
     createEngine(ih, body, function() {
         res.writeHead(200, jsonHead);
         var engineStats = getStatistics(engines[ih])
-        if (body.guessFileIdx && engineStats.files) {
-            // we don't have a default file idx
-            // so we will guess it for the clients
-            engineStats.guessedFileIdx = GuessFileIdx(engineStats.files, body.guessFileIdx)
+        if (engineStats.files) {
+            if ((body.fileMustInclude || []).length) {
+                var isRegex = /^\/(.*)\/(.*)$/
+                fileMustInclude = body.fileMustInclude.map(function(el) {
+                  if ((el || '').match(isRegex)) {
+                    var parts = isRegex.exec(el)
+                    try {
+                      return new RegExp(parts[1],parts[2])
+                    } catch(e) {}
+                  }
+                  return el
+                })
+                engineStats.files.find(function(file, idx) {
+                    return !!fileMustInclude.find(function(reg) {
+                        reg = typeof reg === 'string' ? new RegExp(reg) : reg
+                        if (safeStatelessRegex(file.name, reg, 500)) {
+                            engineStats.guessedFileIdx = idx
+                            return true
+                        }
+                        return false
+                    })
+                })
+            }
+            if (body.guessFileIdx && !engineStats.hasOwnProperty('guessedFileIdx')) {
+                // we don't have a default file idx
+                // so we will guess it for the clients
+                engineStats.guessedFileIdx = GuessFileIdx(engineStats.files, body.guessFileIdx)
+            }
         }
         res.end(JSON.stringify(engineStats));
     });
@@ -411,7 +451,18 @@ router.get("/removeAll", function(req, res) {
 function handleTorrent(req, res, next) {
     var u = url.parse(req.url, true);
     var trackers = u.query.tr && [].concat(u.query.tr)
-    openPath(u.pathname, trackers, function(err, handle, e)
+    var fileMustInclude = u.query.f && [].concat(u.query.f)
+    var isRegex = /^\/(.*)\/(.*)$/
+    fileMustInclude = (fileMustInclude || []).map(function(el) {
+      if ((el || '').match(isRegex)) {
+        var parts = isRegex.exec(el)
+        try {
+          return new RegExp(parts[1],parts[2])
+        } catch(e) {}
+      }
+      return el
+    })
+    openPath(u.pathname, trackers, fileMustInclude, function(err, handle, e)
     {
         if (err) { console.error(err); res.statusCode = 500; return res.end(); }
 
