@@ -69,6 +69,9 @@ EngineFS.beforeCreateEngine = function(hash, cb) {
 
 function createEngine(infoHash, options, cb)
 {
+    if (options.stream && !options.torrent) {
+        options.torrent = options.stream
+    }
     // this is used to adapt the options for
     // fs cache when using tv env
     EngineFS.beforeCreateEngine(infoHash, function() {
@@ -354,6 +357,7 @@ router.get("/stats.json", function(req, res) {
 router.all("/:infoHash/create", function(req, res) {
     var ih = req.params.infoHash.toLowerCase();
     var body = req.body || { }
+
     createEngine(ih, body, function() {
         res.writeHead(200, jsonHead);
         var engineStats = getStatistics(engines[ih])
