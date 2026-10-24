@@ -11,6 +11,7 @@
   "dependencies": {
     "body-parser": "1.x.x",
     "connect": "3.6.x",
+    "content-disposition": "0.5.3",
     "mime": "^1.2.11",
     "node-fetch": "^2.1.2",
     "parse-torrent-file": "4.0.x",
