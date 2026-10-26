@@ -15,7 +15,7 @@
     "mime": "^1.2.11",
     "node-fetch": "^2.1.2",
     "parse-torrent-file": "4.0.x",
-    "peer-search": "git+ssh://git@github.com/Ivshti/peer-search#bb0aacbe8ad7b6ed1c0bdfdd461fb4cd04473574",
+    "peer-search": "git+ssh://git@github.com/Ivshti/peer-search#46d09a23041169f539c2f38a56dd2ea1f190749f",
     "pump": "^1.0.0",
     "range-parser": "^1.0.0",
     "router": "1.3.x",
