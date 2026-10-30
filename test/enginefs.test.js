@@ -51,7 +51,7 @@ var nextFiles = null;
 EngineFS.STREAM_TIMEOUT = EngineFS.ENGINE_TIMEOUT = 10;
 EngineFS.getDefaults = function() { return { } }; // no peer search: nothing goes to the network
 EngineFS.engine = function(torrent, options) {
-    var ih = /btih:([0-9a-f]{40})/.exec(torrent)[1];
+    var ih = /btih:([^&]+)/.exec(torrent)[1];
     return fakeEngine(ih, nextFiles.files, nextFiles.opts);
 };
 
