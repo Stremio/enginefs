@@ -237,6 +237,25 @@ test("requests get the same url fields url.parse used to set", function() {
     });
 });
 
+test("a file name containing a backslash is found by name", function() {
+    // url.parse turned "\" into "/" in the path, so "/<hash>/name\x.mkv" looked for a file called "name"
+    var ih = hash("6");
+    nextFiles = { files: [{ name: "x.mkv", length: 10 }, { name: "name\\x.mkv", length: 20 }] };
+    var http = require("http");
+    var server = EngineFS.http();
+    return new Promise(function(resolve) { server.listen(0, resolve) }).then(function() {
+        return new Promise(function(resolve, reject) {
+            http.get({ port: server.address().port, path: "/" + ih + "/name\\x.mkv" }, function(res) {
+                res.resume();
+                res.on("end", function() { resolve(res) });
+            }).on("error", reject);
+        });
+    }).then(function(res) {
+        assert.strictEqual(res.statusCode, 200);
+        assert.strictEqual(res.headers["content-length"], "20");
+    }).finally(function() { server.close() });
+});
+
 test("repeated ?tr= trackers reach peer search as a list", function() {
     var ih = hash("9");
     nextFiles = { files: [{ name: "movie.mkv", length: 100 }] };
