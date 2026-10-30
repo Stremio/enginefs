@@ -114,6 +114,31 @@ test("an unsatisfiable range gets 416", function() {
     });
 });
 
+test("a range request returns 206 with the requested bytes", function() {
+    var ih = hash("7");
+    nextFiles = { files: [{ name: "movie.mkv", length: 100 }] };
+    return withServer(function(base) {
+        return fetch(base + "/" + ih + "/0", { headers: { Range: "bytes=10-19" } }).then(function(res) {
+            assert.strictEqual(res.status, 206);
+            assert.strictEqual(res.headers.get("content-range"), "bytes 10-19/100");
+            return res.arrayBuffer();
+        }).then(function(body) {
+            assert.strictEqual(body.byteLength, 10);
+        });
+    });
+});
+
+test("a path segment that only contains an info hash is rejected", function() {
+    var ih = hash("8");
+    nextFiles = { files: [{ name: "movie.mkv", length: 100 }] };
+    return withServer(function(base) {
+        return fetch(base + "/xyz" + ih + "abc/0").then(function(res) {
+            assert.strictEqual(res.status, 500);
+            assert.strictEqual(EngineFS.exists("xyz" + ih + "abc"), false, "no engine is created for the bogus hash");
+        });
+    });
+});
+
 test("stream progress stays within 0..1 for files not aligned to pieces", function() {
     var ih = hash("d");
     // starts in the middle of piece 0 and ends in piece 1: two pieces for 100 bytes

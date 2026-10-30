@@ -2,7 +2,6 @@ var url = require("url");
 var os = require("os");
 var events = require("events");
 var path = require("path");
-var util = require("util");
 var fs = require("fs");
 var fetch = require("node-fetch");
 
@@ -28,7 +27,7 @@ var spoofedPeerId = require("./lib/spoofPeerId")
 
 var safeStatelessRegex = require('safe-stateless-regex')
 
-var IH_REGEX = new RegExp("([0-9A-Fa-f]){40}", "g");
+var IH_REGEX = /^[0-9A-Fa-f]{40}$/;
 
 // fileMustInclude entries are either "/pattern/flags" or plain patterns; they come from
 // requests, so invalid ones are dropped instead of throwing inside engine callbacks
@@ -103,7 +102,7 @@ function createEngine(infoHash, options, cb)
         cb = cb || function() { };
         EngineFS.once("engine-ready:"+infoHash, function() { cb(null, engines[infoHash]) });
 
-        options = util._extend(EngineFS.getDefaults(infoHash), options || { });
+        options = Object.assign(EngineFS.getDefaults(infoHash), options || { });
         options.path = options.path || EngineFS.getCachePath(infoHash);
 
         Emit(["engine-create", infoHash, options]);
@@ -531,7 +530,7 @@ function handleTorrent(req, res, next) {
         res.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
 
         if (req.method === "HEAD") return res.end();
-        pump(handle.createReadStream(util._extend(range, opts)), res);  
+        pump(handle.createReadStream(Object.assign(range, opts)), res);  
     });
 }
 
@@ -546,7 +545,7 @@ function createApp()
     var app = connect();
 
     app.use(function(req, res, next) { 
-        util._extend(req, url.parse(req.url, true));
+        Object.assign(req, url.parse(req.url, true));
         if (EngineFS.loggingEnabled) console.log("-> "+req.method+" "+url.parse(req.url).path+" "+(req.headers["range"] || "")); next();
     });
 
@@ -650,7 +649,7 @@ function getStatistics(e, idx)
     };
     // TODO: better stream-specific data; e.g. download/uploaded should only be specific to this stream
     if (!isNaN(idx) && e.torrent && e.torrent.files[idx]) {
-        util._extend(s, getStreamStats(e, e.torrent.files[idx]));
+        Object.assign(s, getStreamStats(e, e.torrent.files[idx]));
     };
     return s;
 }
