@@ -2,7 +2,6 @@ var url = require("url");
 var os = require("os");
 var events = require("events");
 var path = require("path");
-var util = require("util");
 var fs = require("fs");
 var fetch = require("node-fetch");
 
@@ -28,7 +27,28 @@ var spoofedPeerId = require("./lib/spoofPeerId")
 
 var safeStatelessRegex = require('safe-stateless-regex')
 
-var IH_REGEX = new RegExp("([0-9A-Fa-f]){40}", "g");
+var IH_REGEX = /^[0-9A-Fa-f]{40}$/;
+
+// fileMustInclude entries are either "/pattern/flags" or plain patterns; they come from
+// requests, so invalid ones are dropped instead of throwing inside engine callbacks
+function parseFileMustInclude(list)
+{
+    var isRegex = /^\/(.*)\/(.*)$/
+    return (list || []).map(function(el) {
+        if (el instanceof RegExp) return el
+        var parts = isRegex.exec(el || '')
+        if (parts) {
+            try {
+                return new RegExp(parts[1], parts[2])
+            } catch(e) {}
+        }
+        try {
+            return new RegExp(el)
+        } catch(e) {
+            return null
+        }
+    }).filter(Boolean)
+}
 
 // Events:
 // stream-open
@@ -82,7 +102,7 @@ function createEngine(infoHash, options, cb)
         cb = cb || function() { };
         EngineFS.once("engine-ready:"+infoHash, function() { cb(null, engines[infoHash]) });
 
-        options = util._extend(EngineFS.getDefaults(infoHash), options || { });
+        options = Object.assign(EngineFS.getDefaults(infoHash), options || { });
         options.path = options.path || EngineFS.getCachePath(infoHash);
 
         Emit(["engine-create", infoHash, options]);
@@ -210,7 +230,7 @@ function removeEngine(infoHash, cb)
 
 function settingsEngine(infoHash, settings) 
 {
-   var e = engines[infoHash];
+   var e = getEngine(infoHash);
    if (!e) return;
    if (settings.hasOwnProperty("writeQueue") && e.store.writequeue) e.ready(function() {
         if (settings.writeQueue == "PAUSE") { 
@@ -226,8 +246,8 @@ function settingsEngine(infoHash, settings)
 
 function statsEngine(infoHash, idx)
 {
-    if (!engines[infoHash]) return null;
-    return getStatistics(engines[infoHash], idx);
+    if (!existsEngine(infoHash)) return null;
+    return getStatistics(getEngine(infoHash), idx);
 }
 
 function listEngines()
@@ -236,7 +256,7 @@ function listEngines()
 }
 
 function keepConcurrency(hash, concurrency) {
-    const enginesCount = listEngines().length +1 // math in future engine
+    const enginesCount = listEngines().length + (existsEngine(hash) ? 0 : 1) // math in future engine, unless it already exists
     if (!concurrency || enginesCount <= concurrency) return Promise.resolve()
     console.log('keep concurrency', concurrency)
     const filteredEngines = listEngines().filter(ih => (ih.toLowerCase() !== hash.toLowerCase() && getSelections(ih).length === 0));
@@ -262,7 +282,8 @@ var externalRouter = Router();
 function prewarmStream(hash, idx)
 {
     //EngineFS.emit("stream-open", hash, idx);
-    if (engines[hash]) engines[hash].ready(function() { engines[hash].files[idx].select() }); // select without priority so we start downloading
+    var e = getEngine(hash);
+    if (e) e.ready(function() { e.files[idx].select() }); // select without priority so we start downloading
 };
 
 function openPath(path, trackers, fileMustInclude, cb)
@@ -293,7 +314,6 @@ function openPath(path, trackers, fileMustInclude, cb)
                 // we prefer fileMustInclude over fileIdx
                 engine.files.find(function(file, idx) {
                     return !!fileMustInclude.find(function(reg) {
-                        reg = typeof reg === 'string' ? new RegExp(reg) : reg
                         if (safeStatelessRegex(file.name, reg, 500)) {
                             i = idx
                             return true
@@ -345,13 +365,13 @@ function openPath(path, trackers, fileMustInclude, cb)
 var jsonHead = { "Content-Type": "application/json" };
 router.use(sendCORSHeaders);
 router.get("/favicon.ico", function(req, res) { res.writeHead(404, jsonHead); res.end() });
-router.get("/:infoHash/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash]))) });
-router.get("/:infoHash/:idx/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(engines[req.params.infoHash], req.params.idx))) });
+router.get("/:infoHash/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(getEngine(req.params.infoHash)))) });
+router.get("/:infoHash/:idx/stats.json", function(req, res) { res.writeHead(200, jsonHead); res.end(JSON.stringify(getStatistics(getEngine(req.params.infoHash), req.params.idx))) });
 router.get("/stats.json", function(req, res) { 
     res.writeHead(200, jsonHead);
     var stats = { };
     if (req.url.match('sys=1')) stats['sys'] = { loadavg: os.loadavg(), cpus: os.cpus() }
-    for (ih in engines) stats[ih] = getStatistics(engines[ih]);
+    for (var ih in engines) stats[ih] = getStatistics(engines[ih]);
     res.end(JSON.stringify(stats)); 
 });
 
@@ -363,20 +383,10 @@ router.all("/:infoHash/create", function(req, res) {
         res.writeHead(200, jsonHead);
         var engineStats = getStatistics(engines[ih])
         if (engineStats.files) {
-            if ((body.fileMustInclude || []).length) {
-                var isRegex = /^\/(.*)\/(.*)$/
-                fileMustInclude = body.fileMustInclude.map(function(el) {
-                  if ((el || '').match(isRegex)) {
-                    var parts = isRegex.exec(el)
-                    try {
-                      return new RegExp(parts[1],parts[2])
-                    } catch(e) {}
-                  }
-                  return el
-                })
+            var fileMustInclude = parseFileMustInclude([].concat(body.fileMustInclude || []))
+            if (fileMustInclude.length) {
                 engineStats.files.find(function(file, idx) {
                     return !!fileMustInclude.find(function(reg) {
-                        reg = typeof reg === 'string' ? new RegExp(reg) : reg
                         if (safeStatelessRegex(file.name, reg, 500)) {
                             engineStats.guessedFileIdx = idx
                             return true
@@ -449,24 +459,14 @@ router.get("/:infoHash/remove", function(req, res) {
     }); 
 });
 router.get("/removeAll", function(req, res) { 
-    for (ih in engines) removeEngine(ih);
+    for (var ih in engines) removeEngine(ih);
     res.writeHead(200, jsonHead); res.end(JSON.stringify({})); 
 });
 
 function handleTorrent(req, res, next) {
     var u = url.parse(req.url, true);
     var trackers = u.query.tr && [].concat(u.query.tr)
-    var fileMustInclude = u.query.f && [].concat(u.query.f)
-    var isRegex = /^\/(.*)\/(.*)$/
-    fileMustInclude = (fileMustInclude || []).map(function(el) {
-      if ((el || '').match(isRegex)) {
-        var parts = isRegex.exec(el)
-        try {
-          return new RegExp(parts[1],parts[2])
-        } catch(e) {}
-      }
-      return el
-    })
+    var fileMustInclude = parseFileMustInclude(u.query.f && [].concat(u.query.f))
     openPath(u.pathname, trackers, fileMustInclude, function(err, handle, e)
     {
         if (err) { console.error(err); res.statusCode = 500; return res.end(); }
@@ -498,7 +498,15 @@ function handleTorrent(req, res, next) {
            if (!defaults.circularBuffer)
               prewarmStream(e.infoHash, e.files.indexOf(handle));
         }
-        range = range && rangeParser(handle.length, range)[0];
+        var ranges = range && rangeParser(handle.length, range);
+        if (ranges === -1) {
+            // unsatisfiable, e.g. starts past the end of the file
+            res.statusCode = 416;
+            res.setHeader("Content-Range", "bytes */"+handle.length);
+            return res.end();
+        }
+        // malformed ranges (-2) are ignored and the whole file is served
+        range = Array.isArray(ranges) ? ranges[0] : undefined;
         res.setHeader("Accept-Ranges", "bytes");
         res.setHeader("Content-Type", mime.lookup(handle.name));
         res.setHeader("Cache-Control", "max-age=0, no-cache");
@@ -522,7 +530,7 @@ function handleTorrent(req, res, next) {
         res.setHeader("Content-Range", "bytes "+range.start+"-"+range.end+"/"+handle.length);
 
         if (req.method === "HEAD") return res.end();
-        pump(handle.createReadStream(util._extend(range, opts)), res);  
+        pump(handle.createReadStream(Object.assign(range, opts)), res);  
     });
 }
 
@@ -537,7 +545,7 @@ function createApp()
     var app = connect();
 
     app.use(function(req, res, next) { 
-        util._extend(req, url.parse(req.url, true));
+        Object.assign(req, url.parse(req.url, true));
         if (EngineFS.loggingEnabled) console.log("-> "+req.method+" "+url.parse(req.url).path+" "+(req.headers["range"] || "")); next();
     });
 
@@ -628,7 +636,7 @@ function getStatistics(e, idx)
         uploaded: e.swarm.uploaded,
 
         downloadSpeed: e.swarm.downloadSpeed(),
-        uploadSpeed: e.swarm.downloadSpeed(),
+        uploadSpeed: e.swarm.uploadSpeed(),
         
         sources: e.swarm.peerSearch && e.swarm.peerSearch.stats(),
         peerSearchRunning: e.swarm.peerSearch ? e.swarm.peerSearch.isRunning() : undefined,
@@ -641,7 +649,7 @@ function getStatistics(e, idx)
     };
     // TODO: better stream-specific data; e.g. download/uploaded should only be specific to this stream
     if (!isNaN(idx) && e.torrent && e.torrent.files[idx]) {
-        util._extend(s, getStreamStats(e, e.torrent.files[idx]));
+        Object.assign(s, getStreamStats(e, e.torrent.files[idx]));
     };
     return s;
 }
@@ -657,7 +665,8 @@ function getStreamStats(e, file)
     var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
     var availablePieces = 0;
     for (var i=startPiece; i<=endPiece; i++) if (e.bitfield.get(i)) availablePieces++;
-    var filePieces = Math.ceil(file.length / e.torrent.pieceLength);
+    // a file that doesn't start on a piece boundary spans one more piece than length / pieceLength
+    var filePieces = endPiece - startPiece + 1;
     
     stats.streamProgress = availablePieces/filePieces;
 
@@ -681,9 +690,10 @@ EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(inf
     var endPiece = ((file.offset+file.length-1) / e.torrent.pieceLength) | 0;
     var fpieces = [ ];
     for (var i=startPiece; i<=endPiece; i++) if (! e.bitfield.get(i)) fpieces.push(i);
-    var filePieces = Math.ceil(file.length / e.torrent.pieceLength);
-    
-    var onDownload = function(p) { 
+    var filePieces = endPiece - startPiece + 1;
+    var fpath = e.store.getDest && e.store.getDest(fileIndex); // getDest not supported in all torrent-stream versions
+
+    var onDownload = function(p) {
         // remove from array
         if (p !== undefined) {
             var idx = fpieces.indexOf(p);
@@ -695,7 +705,6 @@ EngineFS.on("stream-open", function(infoHash, fileIndex) { var e = getEngine(inf
 
         if (fpieces.length) return;
 
-        var fpath = e.store.getDest && e.store.getDest(fileIndex); // getDest not supported in all torrent-stream versions
         EngineFS.emit("stream-cached:"+infoHash+":"+fileIndex, fpath, file);
         EngineFS.emit("stream-cached", infoHash, fileIndex, fpath, file);
 
