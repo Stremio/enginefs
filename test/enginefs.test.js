@@ -3,6 +3,15 @@ var assert = require("node:assert");
 var Readable = require("stream").Readable;
 var EventEmitter = require("events").EventEmitter;
 
+// replace peer-search before enginefs loads it, so no test can reach trackers or the DHT
+var Module = require("module");
+var peerSearchPath = require.resolve("peer-search");
+var peerSearchCalls = [];
+var fakePeerSearch = new Module(peerSearchPath);
+fakePeerSearch.exports = function(sources, swarm, opts) { peerSearchCalls.push({ sources: sources, opts: opts }) };
+fakePeerSearch.loaded = true;
+require.cache[peerSearchPath] = fakePeerSearch;
+
 var EngineFS = require("../enginefs");
 var guessFileIdx = require("../lib/guessFileIdx");
 
@@ -45,6 +54,14 @@ function fakeEngine(infoHash, files, opts)
     };
     return e;
 }
+
+// routes must be added before the first app is created: connect overwrites router.route when mounting it
+var ECHO_FIELDS = ["hash", "search", "query", "pathname", "path", "href"];
+EngineFS.router.get("/echo", function(req, res) {
+    var out = {};
+    ECHO_FIELDS.forEach(function(k) { out[k] = req[k] });
+    res.end(JSON.stringify(out));
+});
 
 var nextFiles = null;
 // inactivity timers would otherwise keep the test process alive for a minute
@@ -179,6 +196,60 @@ test("keepConcurrency does not remove engines when reusing an existing one", fun
             assert.ok(EngineFS.exists(a), "the reused engine is kept");
             assert.ok(EngineFS.exists(b), "the other engine is kept too");
         });
+});
+
+test("requests get the same url fields url.parse used to set", function() {
+    var url = require("url");
+    var paths = ["/echo", "/echo?", "/echo?x=1&x=2&y", "/echo?tr=udp%3A%2F%2Ft%3A80&f=%2Fa%2Fi", "/echo#h", "/echo?b=1#h"];
+    var fields = ECHO_FIELDS;
+    return withServer(function(base) {
+        // fetch drops the fragment, so check those against the parser directly through a raw request path
+        return Promise.all(paths.filter(function(p) { return p.indexOf("#") === -1 }).map(function(p) {
+            return fetch(base + p).then(function(res) { return res.json() }).then(function(got) {
+                var expected = url.parse(p, true);
+                fields.forEach(function(k) {
+                    assert.deepStrictEqual(got[k], JSON.parse(JSON.stringify(expected[k])), p + " " + k);
+                });
+            });
+        }));
+    }).then(function() {
+        var http = require("http");
+        var server = EngineFS.http();
+        return new Promise(function(resolve) { server.listen(0, resolve) }).then(function() {
+            return Promise.all(paths.filter(function(p) { return p.indexOf("#") !== -1 }).map(function(p) {
+                return new Promise(function(resolve, reject) {
+                    http.get({ port: server.address().port, path: p }, function(res) {
+                        var body = "";
+                        res.on("data", function(d) { body += d });
+                        res.on("end", function() {
+                            var got = JSON.parse(body), expected = url.parse(p, true);
+                            try {
+                                fields.forEach(function(k) {
+                                    assert.deepStrictEqual(got[k], JSON.parse(JSON.stringify(expected[k])), p + " " + k);
+                                });
+                                resolve();
+                            } catch(e) { reject(e) }
+                        });
+                    }).on("error", reject);
+                });
+            }));
+        }).finally(function() { server.close() });
+    });
+});
+
+test("repeated ?tr= trackers reach peer search as a list", function() {
+    var ih = hash("9");
+    nextFiles = { files: [{ name: "movie.mkv", length: 100 }] };
+    EngineFS.getDefaults = function() { return { peerSearch: { min: 1, max: 2, sources: [] } } };
+    peerSearchCalls.length = 0;
+    return withServer(function(base) {
+        return fetch(base + "/" + ih + "/0?tr=tracker:a&tr=tracker:b").then(function(res) { return res.arrayBuffer() });
+    }).finally(function() {
+        EngineFS.getDefaults = function() { return { } };
+    }).then(function() {
+        assert.strictEqual(peerSearchCalls.length, 1);
+        assert.deepStrictEqual(peerSearchCalls[0].sources, ["tracker:a", "tracker:b"]);
+    });
 });
 
 test("guessFileIdx ignores files that only end like a media extension", function() {

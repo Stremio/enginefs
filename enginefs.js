@@ -1,4 +1,4 @@
-var url = require("url");
+var querystring = require("querystring");
 var os = require("os");
 var events = require("events");
 var path = require("path");
@@ -28,6 +28,26 @@ var spoofedPeerId = require("./lib/spoofPeerId")
 var safeStatelessRegex = require('safe-stateless-regex')
 
 var IH_REGEX = /^[0-9A-Fa-f]{40}$/;
+
+// gives the same fields url.parse(reqUrl, true) gave for a request path, without the
+// deprecated parser (DEP0169); req.query keeps repeated keys as arrays, e.g. ?tr=a&tr=b
+function parseRequestUrl(reqUrl)
+{
+    var hashIdx = reqUrl.indexOf("#");
+    var withoutHash = hashIdx === -1 ? reqUrl : reqUrl.slice(0, hashIdx);
+    var queryIdx = withoutHash.indexOf("?");
+    var pathname = queryIdx === -1 ? withoutHash : withoutHash.slice(0, queryIdx);
+    var search = queryIdx === -1 ? null : withoutHash.slice(queryIdx);
+    return {
+        protocol: null, slashes: null, auth: null, host: null, port: null, hostname: null,
+        hash: hashIdx === -1 ? null : reqUrl.slice(hashIdx),
+        search: search,
+        query: querystring.parse(search ? search.slice(1) : ""),
+        pathname: pathname,
+        path: pathname + (search || ""),
+        href: reqUrl
+    };
+}
 
 // fileMustInclude entries are either "/pattern/flags" or plain patterns; they come from
 // requests, so invalid ones are dropped instead of throwing inside engine callbacks
@@ -464,7 +484,7 @@ router.get("/removeAll", function(req, res) {
 });
 
 function handleTorrent(req, res, next) {
-    var u = url.parse(req.url, true);
+    var u = parseRequestUrl(req.url);
     var trackers = u.query.tr && [].concat(u.query.tr)
     var fileMustInclude = parseFileMustInclude(u.query.f && [].concat(u.query.f))
     openPath(u.pathname, trackers, fileMustInclude, function(err, handle, e)
@@ -545,8 +565,8 @@ function createApp()
     var app = connect();
 
     app.use(function(req, res, next) { 
-        Object.assign(req, url.parse(req.url, true));
-        if (EngineFS.loggingEnabled) console.log("-> "+req.method+" "+url.parse(req.url).path+" "+(req.headers["range"] || "")); next();
+        Object.assign(req, parseRequestUrl(req.url));
+        if (EngineFS.loggingEnabled) console.log("-> "+req.method+" "+req.path+" "+(req.headers["range"] || "")); next();
     });
 
     // becauce of /create blob body
