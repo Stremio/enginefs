@@ -17,7 +17,11 @@ function fakeEngine(infoHash, files, opts)
     files = files.map(function(f) {
         var file = {
             name: f.name, path: f.name, length: f.length, offset: f.offset !== undefined ? f.offset : offset,
-            select: function() { },
+            select: function() {
+                var startPiece = (file.offset / PIECE) | 0;
+                var endPiece = ((file.offset + file.length - 1) / PIECE) | 0;
+                e.select(startPiece, endPiece, false);
+            },
             createReadStream: function(range) {
                 var start = (range && range.start) || 0;
                 var end = range && range.end !== undefined ? range.end : f.length - 1;
@@ -33,7 +37,10 @@ function fakeEngine(infoHash, files, opts)
     e.bitfield = { get: function() { return !!opts.complete } };
     e.selection = [];
     e.store = { };
-    e.select = function() { };
+    e.buffer = opts.buffer;
+    e.select = function(from, to, priority) {
+        e.selection.push({ from: from, to: to, offset: 0, priority: !!priority });
+    };
     e.ready = function(cb) { setImmediate(cb) };
     e.destroy = function(cb) { setImmediate(cb) };
     e.swarm = {
@@ -188,6 +195,39 @@ test("guessFileIdx ignores files that only end like a media extension", function
         { path: "sample_mp4", length: 3000 }
     ];
     assert.strictEqual(guessFileIdx(files, {}), 1);
+});
+
+test("repeated open-ended range requests do not stack duplicate background selections", function() {
+    var ihDisk = hash("3");
+    var ihBuffered = hash("4");
+    return withServer(function(base) {
+        nextFiles = { files: [{ name: "movie.mp4", length: 500 }] };
+        return Promise.all([0, 50, 100, 150, 200].map(function(start) {
+            return fetch(base + "/" + ihDisk + "/0", { headers: { Range: "bytes=" + start + "-" } })
+                .then(function(res) { return res.arrayBuffer() });
+        })).then(function() {
+            assert.strictEqual(EngineFS.getSelections(ihDisk).length, 1);
+            nextFiles = { files: [{ name: "movie.mp4", length: 500 }], opts: { buffer: 1024 } };
+            return Promise.all([0, 50, 100, 150, 200].map(function(start) {
+                return fetch(base + "/" + ihBuffered + "/0", { headers: { Range: "bytes=" + start + "-" } })
+                    .then(function(res) { return res.arrayBuffer() });
+            }));
+        }).then(function() {
+            assert.strictEqual(EngineFS.getSelections(ihBuffered).length, 1);
+        });
+    });
+});
+
+test("prewarmStream is idempotent and ignores invalid file indices", function() {
+    var ih = hash("5");
+    return create(ih, [{ name: "movie.mp4", length: 300 }]).then(function() {
+        EngineFS.prewarmStream(ih, 0);
+        EngineFS.prewarmStream(ih, 0);
+        EngineFS.prewarmStream(ih, 99);
+        return new Promise(function(resolve) { setImmediate(resolve) });
+    }).then(function() {
+        assert.strictEqual(EngineFS.getSelections(ih).length, 1);
+    });
 });
 
 test.after(removeAll);
