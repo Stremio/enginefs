@@ -283,7 +283,14 @@ function prewarmStream(hash, idx)
 {
     //EngineFS.emit("stream-open", hash, idx);
     var e = getEngine(hash);
-    if (e) e.ready(function() { e.files[idx].select() }); // select without priority so we start downloading
+    if (e) e.ready(function() {
+        var file = e.files && e.files[idx];
+        if (!file || file.__prewarmed) return;
+        file.__prewarmed = true;
+        var torrentFile = e.torrent && e.torrent.files && e.torrent.files[idx];
+        if (!e.buffer && torrentFile && torrentFile.__cacheEvents) return;
+        file.select(); // select without priority so we start downloading
+    });
 };
 
 function openPath(path, trackers, fileMustInclude, cb)
@@ -492,21 +499,21 @@ function handleTorrent(req, res, next) {
         req.connection.setTimeout(24*60*60*1000);
         //req.connection.setTimeout(0);
 
-        var range = req.headers.range;
-        if (range && range.endsWith('-')) {
-           var defaults = EngineFS.getDefaults(e.infoHash);
-           if (!defaults.circularBuffer)
-              prewarmStream(e.infoHash, e.files.indexOf(handle));
-        }
-        var ranges = range && rangeParser(handle.length, range);
+        var rawRange = req.headers.range;
+        var ranges = rawRange && rangeParser(handle.length, rawRange);
         if (ranges === -1) {
             // unsatisfiable, e.g. starts past the end of the file
             res.statusCode = 416;
             res.setHeader("Content-Range", "bytes */"+handle.length);
             return res.end();
         }
+        if (rawRange && rawRange.endsWith('-')) {
+            var defaults = EngineFS.getDefaults(e.infoHash);
+            if (!defaults.circularBuffer)
+                prewarmStream(e.infoHash, e.files.indexOf(handle));
+        }
         // malformed ranges (-2) are ignored and the whole file is served
-        range = Array.isArray(ranges) ? ranges[0] : undefined;
+        var range = Array.isArray(ranges) ? ranges[0] : undefined;
         res.setHeader("Accept-Ranges", "bytes");
         res.setHeader("Content-Type", mime.lookup(handle.name));
         res.setHeader("Cache-Control", "max-age=0, no-cache");
